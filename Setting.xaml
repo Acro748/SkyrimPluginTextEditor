@@ -1,0 +1,105 @@
+﻿<Window x:Class="SkyrimPluginEditor.Setting"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SkyrimPluginEditor"
+        mc:Ignorable="d"
+        Title="Setting" Height="400" Width="600"
+        ResizeMode="NoResize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="10"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="10"/>
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="1" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="50*"/>
+                <RowDefinition Height="25"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="1,2,1,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="40"/>
+                    <ColumnDefinition Width="100*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">Version</TextBlock>
+                <TextBlock x:Name="TB_Version" Grid.Column="1" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+            </Grid>
+            <Grid Grid.Row="1" Margin="1,2,1,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="99"/>
+                    <ColumnDefinition Width="100*"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="90"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">Default Path</TextBlock>
+                <TextBox x:Name="TB_DefaultPath" Grid.Column="1" Margin="1,1,1,1" />
+                <CheckBox x:Name="CB_FixedDefaultPath" Margin="1,3,1,3" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Fixed"/>
+                <CheckBox x:Name="CB_ParallelFolderRead" Grid.Column="3" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10" Content="Parallel Read"/>
+            </Grid>
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">Log Level</TextBlock>
+                <ComboBox x:Name="CB_LogLevel" Grid.Column="1" Margin="1,3,1,3" FontSize="10" DisplayMemberPath="LogLevel_">
+                    <ComboBox.ItemContainerStyle>
+                        <Style>
+                            <Setter Property="Control.ToolTip" Value="{Binding Tooltip}" />
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
+            </Grid>
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">Encoding</TextBlock>
+                <ComboBox x:Name="CB_Encoding" Grid.Column="1" Margin="1,3,1,3" FontSize="10" DisplayMemberPath="Encoding_"/>
+            </Grid>
+            <Grid Grid.Row="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">Strings Language</TextBlock>
+                <TextBox x:Name="TB_StringLanguage" Grid.Column="1" Margin="1,3,1,3"/>
+                <ComboBox x:Name="CB_StringLanguage" Grid.Column="2" Margin="1,3,1,3" FontSize="10" DisplayMemberPath="Language_" SelectionChanged="CB_StringLanguage_SelectionChanged"/>
+            </Grid>
+            <Grid Grid.Row="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="100*"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="20"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="BT_SetAsDefault" Grid.Column="4" Margin="1,3,1,3" Content="Set as Default" Click="BT_SetAsDefault_Click"/>
+                <Button x:Name="BT_Save" Grid.Column="6" Margin="1,3,1,3" Content="Save" Click="BT_Save_Click"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
