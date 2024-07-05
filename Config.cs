@@ -142,16 +142,16 @@ namespace SkyrimPluginEditor
             }
             return false;
         }
-        public void SetIsFixedDefaultPath(bool active) { configContainer.IsFixedDefaultPath = active; }
-        public void SetEncoding(PluginStreamBase._Encoding encoding) { configContainer.Encoding = encoding; }
-        public void SetStringLanguage(string language) { configContainer.StringLanguage = language; }
-        public void SetParallelFolderRead(bool active) { configContainer.ParallelFolderRead = active; }
-        public void SetSkyrimPluginEditor_MatchCase(bool active) { configContainer.skyrimPluginEditor.MatchCase = active; }
-        public void SetFileManager_MatchCase(bool active) { configContainer.fileManager.MatchCase = active; }
-        public void SetFileManager_FileContent(bool active) { configContainer.fileManager.FileContent = active; }
-        public void SetFileManager_FileOverwrite(bool active) { configContainer.fileManager.FileOverwrite = active; }
-        public void SetFileManager_ClearEmptySubFolder(bool active) { configContainer.fileManager.ClearEmptySubFolder = active; }
-        public void SetFileManager_NonSkyrimFile(bool active) { configContainer.fileManager.NonSkyrimFile = active; }
+        public void SetIsFixedDefaultPath(bool active) { configContainer.IsFixedDefaultPath = active; ConfigWrite(); }
+        public void SetEncoding(PluginStreamBase._Encoding encoding) { configContainer.Encoding = encoding; ConfigWrite(); }
+        public void SetStringLanguage(string language) { configContainer.StringLanguage = language; ConfigWrite(); }
+        public void SetParallelFolderRead(bool active) { configContainer.ParallelFolderRead = active; ConfigWrite(); }
+        public void SetSkyrimPluginEditor_MatchCase(bool active) { configContainer.skyrimPluginEditor.MatchCase = active; ConfigWrite(); }
+        public void SetFileManager_MatchCase(bool active) { configContainer.fileManager.MatchCase = active; ConfigWrite(); }
+        public void SetFileManager_FileContent(bool active) { configContainer.fileManager.FileContent = active; ConfigWrite(); }
+        public void SetFileManager_FileOverwrite(bool active) { configContainer.fileManager.FileOverwrite = active; ConfigWrite(); }
+        public void SetFileManager_ClearEmptySubFolder(bool active) { configContainer.fileManager.ClearEmptySubFolder = active; ConfigWrite(); }
+        public void SetFileManager_NonSkyrimFile(bool active) { configContainer.fileManager.NonSkyrimFile = active; ConfigWrite(); }
 
         public Dictionary<string, List<string>> GetEditableType() { return typeDictionary.EditableType; }
         public bool IsEditableType(string recordSig, string sig)

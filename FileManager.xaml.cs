@@ -507,7 +507,6 @@ namespace SkyrimPluginEditor
             LV_FileList_Update();
 
             Config.GetSingleton.SetFileManager_NonSkyrimFile(mi.IsChecked);
-            Config.GetSingleton.ConfigWrite();
         }
 
         private async void CB_FileContent_CheckUncheck(object sender, RoutedEventArgs e)
@@ -546,7 +545,6 @@ namespace SkyrimPluginEditor
                 });
             }
             Config.GetSingleton.SetFileManager_FileContent(cb.IsChecked ?? false);
-            Config.GetSingleton.ConfigWrite();
         }
 
         private void CB_Extensions_CheckUncheck(object sender, RoutedEventArgs e)
@@ -782,7 +780,6 @@ namespace SkyrimPluginEditor
                 else if (mi == MI_ClearSubFolder)
                     Config.GetSingleton.SetFileManager_ClearEmptySubFolder(mi.IsChecked);
             }
-            Config.GetSingleton.ConfigWrite();
         }
     }
 

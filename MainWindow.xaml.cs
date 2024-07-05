@@ -113,16 +113,25 @@ namespace SkyrimPluginEditor
                 selectedFolders = betterFolderBrowser.SelectedFolders.ToList();
             }
             else
-            {
                 return;
-            }
+            if (selectedFolders.Count == 0)
+                return;
 
-            foreach (string folder in selectedFolders)
+                foreach (string folder in selectedFolders)
             {
                 Logger.Log.Info("Selected Folder : " + folder);
             }
 
             Task.Run(async () => SetPluginListView());
+
+            if (selectedFolders.Count == 1)
+                Config.GetSingleton.SetDefaultPath(selectedFolders.First());
+            else 
+            {
+                var parent = System.IO.Directory.GetParent(selectedFolders.First());
+                if (parent != null)
+                    Config.GetSingleton.SetDefaultPath(parent.FullName);
+            }
         }
 
         private PluginStreamBase._ErrorCode GetFile(string path, object tmpLock)
@@ -1280,7 +1289,6 @@ namespace SkyrimPluginEditor
                 if (cb == CB_MatchCase)
                     Config.GetSingleton.SetSkyrimPluginEditor_MatchCase(CB_MatchCase.IsChecked ?? false);
             }
-            Config.GetSingleton.ConfigWrite();
         }
     }
 
