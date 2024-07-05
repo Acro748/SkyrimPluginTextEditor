@@ -120,6 +120,12 @@ namespace SkyrimPluginEditor
         public PluginStreamBase._Encoding GetEncoding() { return configContainer.Encoding; }
         public string GetStringLanguage() { return configContainer.StringLanguage; }
         public bool GetParallelFolderRead() { return configContainer.ParallelFolderRead; }
+        public bool GetSkyrimPluginEditor_MatchCase() { return configContainer.skyrimPluginEditor.MatchCase; }
+        public bool GetFileManager_MatchCase() { return configContainer.fileManager.MatchCase; }
+        public bool GetFileManager_FileContent() { return configContainer.fileManager.FileContent; }
+        public bool GetFileManager_FileOverwrite() { return configContainer.fileManager.FileOverwrite; }
+        public bool GetFileManager_ClearEmptySubFolder() { return configContainer.fileManager.ClearEmptySubFolder; }
+        public bool GetFileManager_NonSkyrimFile() { return configContainer.fileManager.NonSkyrimFile; }
 
         public void SetLogLevel(Logger.LogLevel logLevel)
         {
@@ -140,6 +146,12 @@ namespace SkyrimPluginEditor
         public void SetEncoding(PluginStreamBase._Encoding encoding) { configContainer.Encoding = encoding; }
         public void SetStringLanguage(string language) { configContainer.StringLanguage = language; }
         public void SetParallelFolderRead(bool active) { configContainer.ParallelFolderRead = active; }
+        public void SetSkyrimPluginEditor_MatchCase(bool active) { configContainer.skyrimPluginEditor.MatchCase = active; }
+        public void SetFileManager_MatchCase(bool active) { configContainer.fileManager.MatchCase = active; }
+        public void SetFileManager_FileContent(bool active) { configContainer.fileManager.FileContent = active; }
+        public void SetFileManager_FileOverwrite(bool active) { configContainer.fileManager.FileOverwrite = active; }
+        public void SetFileManager_ClearEmptySubFolder(bool active) { configContainer.fileManager.ClearEmptySubFolder = active; }
+        public void SetFileManager_NonSkyrimFile(bool active) { configContainer.fileManager.NonSkyrimFile = active; }
 
         public Dictionary<string, List<string>> GetEditableType() { return typeDictionary.EditableType; }
         public bool IsEditableType(string recordSig, string sig)
@@ -177,6 +189,22 @@ namespace SkyrimPluginEditor
             public PluginStreamBase._Encoding Encoding = PluginStreamBase._Encoding.UTF8;
             public string StringLanguage = "English";
             public bool ParallelFolderRead = true;
+
+            public class SkyrimPluginEditor
+            {
+                public bool MatchCase = false;
+            }
+            public SkyrimPluginEditor skyrimPluginEditor = new SkyrimPluginEditor();
+
+            public class FileManager
+            {
+                public bool MatchCase = false;
+                public bool FileContent = false;
+                public bool FileOverwrite = false;
+                public bool ClearEmptySubFolder = true;
+                public bool NonSkyrimFile = false;
+            }
+            public FileManager fileManager = new FileManager();
         }
         private ConfigContainer configContainer = new ConfigContainer();
         public class TypeDictionary

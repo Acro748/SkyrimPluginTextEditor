@@ -1,0 +1,245 @@
+﻿<Window x:Class="SkyrimPluginEditor.FileManager"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SkyrimPluginEditor"
+        mc:Ignorable="d"
+        Title="FileManager" Height="550" Width="900"
+        ResizeMode="CanResizeWithGrip"
+        MinHeight="350" MinWidth="450">
+    <Window.Resources>
+        <Style TargetType="{x:Type ListViewItem}">
+            <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+            <EventSetter Event="KeyDown" Handler="LV_KeyDown"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="LightGray"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="LightGray"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="GridViewColumnHeaderStyle" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Style.Triggers>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="LightGray"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="10"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Column="0" Grid.Row="0">
+                <Menu>
+                    <MenuItem Header="File">
+                        <MenuItem x:Name="MI_Reset" Header="Reset" Click="MI_Reset_Click"/>
+                        <Separator />
+                        <MenuItem x:Name="MI_Save" Header="Save" Click="MI_Save_Click"/>
+                        <Separator />
+                        <MenuItem x:Name="MI_Exit" Header="Exit" Click="MI_Exit_Click"/>
+                    </MenuItem>
+                </Menu>
+            </DockPanel>
+            <DockPanel Grid.Column="1" Grid.Row="0">
+                <Menu>
+                    <MenuItem Header="Tools">
+                        <MenuItem x:Name="MI_FileOverwrite" Header="File Overwrite" IsCheckable="True" ToolTip="If file exists in a new path, overwrite it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
+                        <MenuItem x:Name="MI_ClearSubFolder" Header="Clear empty SubFolder" IsCheckable="True" ToolTip="When saving files, if the sub folder is empty, remove it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
+                        <MenuItem x:Name="MI_NonSkyrimFile" Header="Non Skyrim File" IsCheckable="True" Checked="MI_NonSkyrimFile_CheckUncheck" Unchecked="MI_NonSkyrimFile_CheckUncheck" ToolTip="Display non skyrim file to editable"/>
+                    </MenuItem>
+                </Menu>
+            </DockPanel>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="10"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="10"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="1" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="5*"/>
+                    <ColumnDefinition Width="1.75*"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="62"/>
+                        <RowDefinition Height="192*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130"/>
+                            <ColumnDefinition Width="254*"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="70"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Margin="1,16,1,16" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15">Replace</TextBlock>
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="1*"/>
+                                <RowDefinition Height="1*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TB_ReplaceSearch" Grid.Column="0" Margin="1,3,1,3" TextChanged="TB_TextChanged"></TextBox>
+                                <CheckBox x:Name="CB_MatchCase" Grid.Column="1" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Match Case" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
+                            </Grid>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TB_ReplaceResult" Grid.Column="0" Margin="1,3,1,3" TextChanged="TB_TextChanged"></TextBox>
+                                <CheckBox x:Name="CB_FileContent" Grid.Column="1" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" Content="File Content" Checked="CB_FileContent_CheckUncheck" Unchecked="CB_FileContent_CheckUncheck" ToolTip="Replaces the contents of files known in text format"/>
+                            </Grid>
+                        </Grid>
+                        <Button Grid.Column="3" Margin="1,3,1,3" x:Name="BT_Apply" Content="Apply" IsEnabled="False" Click="BT_Apply_Click"/>
+                    </Grid>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <ListView  x:Name="LV_FileListBefore" Margin="1,3,1,3" SelectionMode="Extended" SizeChanged="LV_SizeChanged" ScrollViewer.ScrollChanged="LV_FileList_ScrollChanged">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Check" Click="LV_Check_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Uncheck" Click="LV_Uncheck_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}" />
+                                        <MenuItem Header="Invert"  Click="LV_Invert_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Check all" Click="LV_CheckAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Uncheck all" Click="LV_UncheckAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Invert all" Click="LV_InvertAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn x:Name="GVC_FileListBefore" Header="Before" Width="320">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox x:Name="CB_FileBefore" MouseEnter="Checkbox_OnMouseEnter" GotMouseCapture="UIElement_OnGotMouseCapture" IsChecked="{Binding IsChecked}" Margin="5,0,0,0"/>
+                                                        <TextBlock Text="{Binding DisplayBefore}" Margin="5,0"/>
+                                                        <StackPanel.ToolTip>
+                                                            <ToolTip>
+                                                                <StackPanel Orientation="Vertical">
+                                                                    <Label Content="{Binding TooltipBefore}" />
+                                                                </StackPanel>
+                                                            </ToolTip>
+                                                        </StackPanel.ToolTip>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <ListView  x:Name="LV_FileListAfter" Margin="1,3,1,3" SelectionMode="Extended" SizeChanged="LV_SizeChanged" ScrollViewer.ScrollChanged="LV_FileList_ScrollChanged">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Check" Click="LV_Check_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Uncheck" Click="LV_Uncheck_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}" />
+                                        <MenuItem Header="Invert"  Click="LV_Invert_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Check all" Click="LV_CheckAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Uncheck all" Click="LV_UncheckAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                        <MenuItem Header="Invert all" Click="LV_InvertAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn x:Name="GVC_FileListAfter" Header="After" Width="320">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox x:Name="CB_FileListAfter" MouseEnter="Checkbox_OnMouseEnter" GotMouseCapture="UIElement_OnGotMouseCapture" IsChecked="{Binding IsChecked}" Margin="5,0,0,0"/>
+                                                        <TextBlock Text="{Binding DisplayAfter}" Margin="5,0"/>
+                                                        <StackPanel.ToolTip>
+                                                            <ToolTip>
+                                                                <StackPanel Orientation="Vertical">
+                                                                    <Label Content="{Binding TooltipAfter}" />
+                                                                </StackPanel>
+                                                            </ToolTip>
+                                                        </StackPanel.ToolTip>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Grid>
+                    </Grid>
+                </Grid>
+                <Grid Grid.Column="2" Grid.Row="0">
+                    <ListView  x:Name="LV_ExtensionList" Margin="1,3,1,3" SelectionMode="Extended" SizeChanged="LV_SizeChanged">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Check" Click="LV_Check_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                <MenuItem Header="Uncheck" Click="LV_Uncheck_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}" />
+                                <MenuItem Header="Invert"  Click="LV_Invert_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                <MenuItem Header="Check all" Click="LV_CheckAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                <MenuItem Header="Uncheck all" Click="LV_UncheckAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                                <MenuItem Header="Invert all" Click="LV_InvertAll_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=Parent}"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn x:Name="GVC_Extensions" Header="Extensions" Width="220">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox x:Name="CB_Extensions" MouseEnter="Checkbox_OnMouseEnter" GotMouseCapture="UIElement_OnGotMouseCapture" IsChecked="{Binding IsChecked, Mode=TwoWay}" Margin="5,0,0,0" Checked="CB_Extensions_CheckUncheck" Unchecked="CB_Extensions_CheckUncheck"/>
+                                                <TextBlock Text="{Binding FileExtension}" Margin="5,0" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </Grid>
+            <Grid Grid.Column="1" Grid.Row="4">
+                <ProgressBar x:Name="PB_Loading" Grid.Column="0" Margin="1,3,1,3" Value="{Binding progressBarValue}"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
