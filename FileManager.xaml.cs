@@ -37,6 +37,9 @@ namespace SkyrimPluginEditor
         {
             selectedFolders = folders;
             InitializeComponent();
+            SizeChangeAll(Config.GetSingleton.GetFileManager_Width() / this.Width);
+            this.Height = Config.GetSingleton.GetFileManager_Height();
+            this.Width = Config.GetSingleton.GetFileManager_Width();
             LV_FileList_Update(true);
             LV_ExtensionList_Update(true);
             MI_Reset_Active(false);
@@ -162,13 +165,22 @@ namespace SkyrimPluginEditor
             {
                 if (Directory.Exists(folder))
                 {
-                    foreach (var path in Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories))
+                    var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
+                    if (filesInDirectory.Length > 0)
                     {
-                        GetFile(path, tmpLock);
+                        double fileStep = step / filesInDirectory.Length;
+                        foreach (var path in filesInDirectory)
+                        {
+                            GetFile(path, tmpLock);
+                            ProgressBarStep(fileStep);
+                        }
                     }
+                    else
+                        ProgressBarStep(step);
                 }
-                ProgressBarStep(step);
             }
+            ProgressBarDone();
+
             LV_FileList_Sort();
             extensionList.Sort((x, y) => { return x.FileExtension.CompareTo(y.FileExtension); });
             LV_FileList_Update();
@@ -271,10 +283,11 @@ namespace SkyrimPluginEditor
         double ProgressBarValue = 0;
         private void ProgressBarInitial(double Maximum = 10000)
         {
+            ProgressBarValue = 0;
             ProgressBarMax = Maximum;
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
-                PB_Loading.Value = 0;
+                PB_Loading.Value = ProgressBarValue;
                 PB_Loading.Minimum = 0;
                 PB_Loading.Maximum = ProgressBarMax;
             }));
@@ -352,6 +365,12 @@ namespace SkyrimPluginEditor
             {
                 GVC_Extensions.Width = GVC_Extensions.Width * Ratio;
             }
+        }
+        private void SizeChangeAll(double Ratio)
+        {
+            GVC_FileListBefore.Width = GVC_FileListBefore.Width * Ratio;
+            GVC_FileListAfter.Width = GVC_FileListAfter.Width * Ratio;
+            GVC_Extensions.Width = GVC_Extensions.Width * Ratio;
         }
 
         private void BT_Apply_Active(bool Active = true)
@@ -780,6 +799,11 @@ namespace SkyrimPluginEditor
                 else if (mi == MI_ClearSubFolder)
                     Config.GetSingleton.SetFileManager_ClearEmptySubFolder(mi.IsChecked);
             }
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            Config.GetSingleton.SetFileManager_Size(this.Height, this.Width);
         }
     }
 

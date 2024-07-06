@@ -75,6 +75,8 @@
                     <MenuItem Header="Tools">
                         <MenuItem x:Name="MI_Setting" Header="Setting" Click="MI_Setting_Click"/>
                         <Separator />
+                        <MenuItem x:Name="MI_SafetyMode" Header="Safety Mode" IsCheckable="True" Checked="MI_SafetyMode_CheckUncheck" Unchecked="MI_SafetyMode_CheckUncheck" ToolTip="if frequent crashes, enable then load speed is a little slower, but loads safely"/>
+                        <Separator />
                         <MenuItem x:Name="MI_FileManager" Header="Open File Manager..." Click="MI_FileManager_Click"/>
                     </MenuItem>
                 </Menu>
@@ -315,6 +317,13 @@
                                                         <StackPanel Orientation="Horizontal">
                                                             <CheckBox x:Name="CB_Fragments" MouseEnter="Checkbox_OnMouseEnter" GotMouseCapture="UIElement_OnGotMouseCapture" IsChecked="{Binding IsChecked, Mode=TwoWay}" Margin="5,0,0,0" Checked="CB_Fragments_CheckUncheck" Unchecked="CB_Fragments_CheckUncheck"/>
                                                             <TextBlock Text="{Binding FragmentType}" Margin="5,0" />
+                                                            <StackPanel.ToolTip>
+                                                                <ToolTip>
+                                                                    <StackPanel Orientation="Vertical">
+                                                                        <Label Content="{Binding FromRecoreds}"/>
+                                                                    </StackPanel>
+                                                                </ToolTip>
+                                                            </StackPanel.ToolTip>
                                                         </StackPanel>
                                                     </DataTemplate>
                                                 </GridViewColumn.CellTemplate>
@@ -327,7 +336,7 @@
                     </Grid>
                 </Grid>
                 <Grid Grid.Row="1">
-                    <ProgressBar x:Name="PB_Loading" Grid.Column="0" Margin="1,3,1,3" Value="{Binding progressBarValue}">
+                    <ProgressBar x:Name="PB_Loading" Grid.Column="0" Margin="1,3,1,3">
                         <ProgressBar.Style>
                             <Style TargetType="ProgressBar">
                                 <Setter Property="Foreground">

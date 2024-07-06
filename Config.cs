@@ -120,7 +120,12 @@ namespace SkyrimPluginEditor
         public PluginStreamBase._Encoding GetEncoding() { return configContainer.Encoding; }
         public string GetStringLanguage() { return configContainer.StringLanguage; }
         public bool GetParallelFolderRead() { return configContainer.ParallelFolderRead; }
+        public double GetSkyrimPluginEditor_Height() { return configContainer.skyrimPluginEditor.Height; }
+        public double GetSkyrimPluginEditor_Width() { return configContainer.skyrimPluginEditor.Width; }
         public bool GetSkyrimPluginEditor_MatchCase() { return configContainer.skyrimPluginEditor.MatchCase; }
+        public bool GetSkyrimPluginEditor_SafetyMode() { return configContainer.skyrimPluginEditor.SafetyMode; }
+        public double GetFileManager_Height() { return configContainer.fileManager.Height; }
+        public double GetFileManager_Width() { return configContainer.fileManager.Width; }
         public bool GetFileManager_MatchCase() { return configContainer.fileManager.MatchCase; }
         public bool GetFileManager_FileContent() { return configContainer.fileManager.FileContent; }
         public bool GetFileManager_FileOverwrite() { return configContainer.fileManager.FileOverwrite; }
@@ -146,7 +151,19 @@ namespace SkyrimPluginEditor
         public void SetEncoding(PluginStreamBase._Encoding encoding) { configContainer.Encoding = encoding; ConfigWrite(); }
         public void SetStringLanguage(string language) { configContainer.StringLanguage = language; ConfigWrite(); }
         public void SetParallelFolderRead(bool active) { configContainer.ParallelFolderRead = active; ConfigWrite(); }
+        public void SetSkyrimPluginEditor_Size(double Height, double Width) {
+            configContainer.skyrimPluginEditor.Height = Height;
+            configContainer.skyrimPluginEditor.Width = Width;
+            ConfigWrite();
+        }
         public void SetSkyrimPluginEditor_MatchCase(bool active) { configContainer.skyrimPluginEditor.MatchCase = active; ConfigWrite(); }
+        public void SetSkyrimPluginEditor_SafetyMode(bool active) { configContainer.skyrimPluginEditor.SafetyMode = active; ConfigWrite(); }
+        public void SetFileManager_Size(double Height, double Width)
+        {
+            configContainer.fileManager.Height = Height;
+            configContainer.fileManager.Width = Width;
+            ConfigWrite();
+        }
         public void SetFileManager_MatchCase(bool active) { configContainer.fileManager.MatchCase = active; ConfigWrite(); }
         public void SetFileManager_FileContent(bool active) { configContainer.fileManager.FileContent = active; ConfigWrite(); }
         public void SetFileManager_FileOverwrite(bool active) { configContainer.fileManager.FileOverwrite = active; ConfigWrite(); }
@@ -192,12 +209,17 @@ namespace SkyrimPluginEditor
 
             public class SkyrimPluginEditor
             {
+                public double Height = 800;
+                public double Width = 1200;
                 public bool MatchCase = false;
+                public bool SafetyMode = false;
             }
             public SkyrimPluginEditor skyrimPluginEditor = new SkyrimPluginEditor();
 
             public class FileManager
             {
+                public double Height = 550;
+                public double Width = 900;
                 public bool MatchCase = false;
                 public bool FileContent = false;
                 public bool FileOverwrite = false;

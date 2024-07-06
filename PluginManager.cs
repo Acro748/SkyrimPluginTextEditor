@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web.UI.WebControls;
 using System.Windows.Interop;
 using System.Windows.Markup;
 using static SkyrimPluginEditor.PluginData;
@@ -33,7 +34,8 @@ namespace SkyrimPluginEditor
             WrongHeader = -4,
             StringMissing = -20,
             ILDLStringMissing = -21,
-            InvalidStrings = -22
+            InvalidStrings = -22,
+            StringWrongEOF = -23
         }
         public enum _Encoding : Int16
         {
@@ -63,6 +65,19 @@ namespace SkyrimPluginEditor
         protected string ReadString(int count = 1, int offset = 0)
         {
             return GetString(ReadBytes(count, offset));
+        }
+        protected string ReadStringToNull(int offset = 0)
+        {
+            List<byte> bytes = new List<byte>();
+            do
+            {
+                byte[] b = ReadBytes(); //read 1 byte
+                bytes.Add(b[0]);
+                if (b[0] == 0)
+                    break;
+            }
+            while (true);
+            return GetString(bytes.ToArray());
         }
         protected string GetString(byte[] bytes)
         {
@@ -100,7 +115,15 @@ namespace SkyrimPluginEditor
         {
             return BitConverter.GetBytes(data);
         }
+        protected byte[] GetBytes(Int16 data)
+        {
+            return BitConverter.GetBytes(data);
+        }
         protected byte[] GetBytes(UInt32 data)
+        {
+            return BitConverter.GetBytes(data);
+        }
+        protected byte[] GetBytes(Int32 data)
         {
             return BitConverter.GetBytes(data);
         }
@@ -136,13 +159,17 @@ namespace SkyrimPluginEditor
 
         protected List<byte> GetByteList(char[] data) { return GetBytes(data).ToList(); }
         protected List<byte> GetByteList(UInt16 data) { return GetBytes(data).ToList(); }
+        protected List<byte> GetByteList(Int16 data) { return GetBytes(data).ToList(); }
         protected List<byte> GetByteList(UInt32 data) { return GetBytes(data).ToList(); }
+        protected List<byte> GetByteList(Int32 data) { return GetBytes(data).ToList(); }
         protected List<byte> GetByteList(float data) { return GetBytes(data).ToList(); }
         protected List<byte> GetByteList(string data) { return data != null ? GetBytes(data).ToList() : new List<byte>(); }
         protected List<byte> GetByteList(byte[] data) { return data.ToList(); }
 
         protected byte[] ReadBytes(int count = 1, int offset = 0)
         {
+            if (count < 0)
+                return new byte[0];
             var bytes = new byte[count];
             file.Read(bytes, offset, count);
             return bytes;
@@ -249,7 +276,7 @@ namespace SkyrimPluginEditor
         {
             public char[] Signature; //4, GRUP
             public UInt32 DataSize; //4, Signiture + DataSize + RecordType + GroupType + TimeStamp + Version + Unk + Record
-            public char[] RecordType; //4
+            public byte[] GroupInfo; //4, usually Record Type(char[4]), but in multiple layer GRUP, just byte code
             public UInt32 GroupType; //4
             public UInt16 TimeStamp; //2
             public UInt16 Version; //2
@@ -312,12 +339,6 @@ namespace SkyrimPluginEditor
         {
             public _LocalizeHeader Header; //Size = Strings size
             public List<_LocalizeEntry> Entry; //count is DataCount
-            public List<string> Strings; //count is Entry count, each size is Entry StringSize
-        }
-        public class _LocalizeDataStruct_ILDL
-        {
-            public _LocalizeHeader Header; //Size = Strings size
-            public List<_LocalizeEntry> Entry; //count is DataCount
             public List<_LocalizeData> Strings; //count is Entry count, each size is Entry StringSize
 
             public bool IsSTRINGS;
@@ -330,51 +351,61 @@ namespace SkyrimPluginEditor
         public class _LocalizeEntry
         {
             public UInt32 ID;
-            public UInt32 Pos; //first pos of string in Strings section
+            public UInt32 Pos; //String start position in Strings data, similar to string's ID
         }
         public class _LocalizeData //ILSTRINGS, DLSTRINGS
         {
             public UInt32 Size; //Data size
+            public UInt32 Pos; //String start position in Strings data, similar to string's ID
             public string Data;
         }
 
         public string GetString(UInt32 ID) 
         {
             int index = -1;
-            if (STRINGS.Entry != null)
+            if (STRINGS != null && STRINGS.Entry != null)
                 index = STRINGS.Entry.FindIndex(x => x.ID == ID);
             if (index != -1)
             {
-                if (STRINGS.Strings.Count <= index)
+                UInt32 pos = STRINGS.Entry[index].Pos;
+                int sindex = STRINGS.Strings.FindIndex(x => x.Pos == pos);
+                if (sindex != -1)
+                    return STRINGS.Strings[sindex].Data;
+                else
                     return "No String Error";
-                return STRINGS.Strings[index];
             }
 
             index = -1;
-            if (ILSTRINGS.Entry != null)
+            if (ILSTRINGS != null && ILSTRINGS.Entry != null)
                 index = ILSTRINGS.Entry.FindIndex(x => x.ID == ID);
             if (index != -1)
             {
-                if (ILSTRINGS.Strings.Count <= index)
+                UInt32 pos = ILSTRINGS.Entry[index].Pos;
+                int sindex = ILSTRINGS.Strings.FindIndex(x => x.Pos == pos);
+                if (sindex != -1)
+                    return ILSTRINGS.Strings[sindex].Data;
+                else
                     return "No String Error";
-                return ILSTRINGS.Strings[index].Data;
             }
 
             index = -1;
-            if (DLSTRINGS.Entry != null)
+            if (DLSTRINGS != null && DLSTRINGS.Entry != null)
                 index = DLSTRINGS.Entry.FindIndex(x => x.ID == ID);
             if (index != -1)
             {
-                if (DLSTRINGS.Strings.Count <= index)
+                UInt32 pos = DLSTRINGS.Entry[index].Pos;
+                int sindex = DLSTRINGS.Strings.FindIndex(x => x.Pos == pos);
+                if (sindex != -1)
+                    return DLSTRINGS.Strings[sindex].Data;
+                else
                     return "No String Error";
-                return DLSTRINGS.Strings[index].Data;
             }
             return "No String Error";
         }
 
         private _LocalizeDataStruct STRINGS = null;
-        private _LocalizeDataStruct_ILDL ILSTRINGS = null;
-        private _LocalizeDataStruct_ILDL DLSTRINGS = null;
+        private _LocalizeDataStruct ILSTRINGS = null;
+        private _LocalizeDataStruct DLSTRINGS = null;
 
         private string BaseDirectory;
         private string PluginName; //without extension
@@ -399,6 +430,7 @@ namespace SkyrimPluginEditor
                 using (file = new FileStream(path, FileMode.Open, FileAccess.Read))
                 {
                     STRINGS = new _LocalizeDataStruct();
+                    STRINGS.IsSTRINGS = true;
                     Logger.Log.Info("Read : " + path);
                     ErrorCode = ParseStringData(STRINGS);
                     Logger.Log.Info(ErrorCode + " : " + path);
@@ -412,7 +444,8 @@ namespace SkyrimPluginEditor
             {
                 using (file = new FileStream(path, FileMode.Open, FileAccess.Read))
                 {
-                    ILSTRINGS = new _LocalizeDataStruct_ILDL();
+                    ILSTRINGS = new _LocalizeDataStruct();
+                    STRINGS.IsSTRINGS = false;
                     Logger.Log.Info("Read : " + path);
                     ErrorCode = ParseStringData(ILSTRINGS);
                     Logger.Log.Info(ErrorCode + " : " + path);
@@ -426,7 +459,8 @@ namespace SkyrimPluginEditor
             {
                 using (file = new FileStream(path, FileMode.Open, FileAccess.Read))
                 {
-                    DLSTRINGS = new _LocalizeDataStruct_ILDL();
+                    DLSTRINGS = new _LocalizeDataStruct();
+                    STRINGS.IsSTRINGS = false;
                     Logger.Log.Info("Read : " + path);
                     ErrorCode = ParseStringData(DLSTRINGS);
                     Logger.Log.Info(ErrorCode + " : " + path);
@@ -456,49 +490,47 @@ namespace SkyrimPluginEditor
                 return _ErrorCode.InvalidStrings;
             }
 
-            localData.Strings = new List<string>();
-            for (int i = 0; i < localData.Entry.Count; i++)
-            {
-                int readSize = 0;
-                if (i + 1 < localData.Entry.Count)
-                    readSize = (int)(localData.Entry[i + 1].Pos - localData.Entry[i].Pos);
-                else //last 
-                    readSize = (int)(file.Length - file.Position);
-                byte[] bytes = ReadBytes(readSize);
-                localData.Strings.Add(GetString(bytes));
-            }
-            return _ErrorCode.Passed;
-        }
-        public _ErrorCode ParseStringData(_LocalizeDataStruct_ILDL localData)
-        {
-            localData.Header = new _LocalizeHeader();
-            localData.Header.Count = ReadUInt32();
-            localData.Header.Size = ReadUInt32();
-
-            localData.Entry = new List<_LocalizeEntry>();
-            for (int i = 0; i < localData.Header.Count; i++)
-            {
-                _LocalizeEntry entry = new _LocalizeEntry();
-                entry.ID = ReadUInt32();
-                entry.Pos = ReadUInt32();
-                localData.Entry.Add(entry);
-            }
-
-            var pos = GetSizePosition(localData.Header.Size);
-            if (pos > file.Length)
-            {
-                Error(_ErrorCode.InvalidStrings);
-                return _ErrorCode.InvalidStrings;
-            }
-
             localData.Strings = new List<_LocalizeData>();
-            foreach (var entry in localData.Entry)
+            long firstStringsPos = file.Position;
+            if (localData.IsSTRINGS)
             {
-                _LocalizeData data = new _LocalizeData();
-                data.Size = ReadUInt32();
-                byte[] strbytes = ReadBytes((int)data.Size);
-                data.Data = GetString(strbytes);
-                localData.Strings.Add(data);
+                do
+                {
+                    if (IsEndedSize(pos))
+                        break;
+                    else if (IsExceedSize(pos))
+                    {
+                        Error(_ErrorCode.StringWrongEOF);
+                        return _ErrorCode.StringWrongEOF;
+                    }
+
+                    _LocalizeData data = new _LocalizeData();
+                    data.Size = 0;
+                    data.Pos = (UInt32)(file.Position - firstStringsPos);
+                    data.Data = ReadStringToNull();
+                    localData.Strings.Add(data);
+                }
+                while(true);
+            }
+            else
+            {
+                firstStringsPos += 4; //add first data size
+                do
+                {
+                    if (IsEndedSize(pos))
+                        break;
+                    else if (IsExceedSize(pos))
+                    {
+                        Error(_ErrorCode.StringWrongEOF);
+                        return _ErrorCode.StringWrongEOF;
+                    }
+
+                    _LocalizeData data = new _LocalizeData();
+                    data.Size = ReadUInt32();
+                    data.Pos = (UInt32)(file.Position - firstStringsPos);
+                    data.Data = ReadString((int)data.Size);
+                }
+                while(true);
             }
             return _ErrorCode.Passed;
         }
@@ -510,7 +542,7 @@ namespace SkyrimPluginEditor
                 int index = STRINGS.Entry.FindIndex(x => x.ID == ID);
                 if (index != -1)
                 {
-                    STRINGS.Strings[index] = Text;
+                    STRINGS.Strings[index].Data = Text;
                     return true;
                 }
             }
@@ -580,35 +612,42 @@ namespace SkyrimPluginEditor
             List<byte> entry = new List<byte>();
             List<byte> strings = new List<byte>();
 
-            UInt32 stringPos = 0;
-            for (int i = 0; i < localize.Strings.Count; i++)
+            List<int> newStringPosData = new List<int>();
+            if (localize.IsSTRINGS) //strings data
             {
-                entry.AddRange(GetByteList(localize.Entry[i], stringPos));
-                string str = localize.Strings[i];
-                if (str != null)
+                foreach (var s in localize.Strings)
                 {
-                    List<byte> strBytes = GetByteList(str);
-                    stringPos += (UInt32)strBytes.Count;
+                    newStringPosData.Add(strings.Count);
+                    strings.AddRange(GetByteList(s.Data));
+                }
+            }
+            else
+            {
+                bool firstString = true;
+                foreach (var s in localize.Strings)
+                {
+                    List<byte> strBytes = GetByteList(s.Data);
+                    strings.AddRange(GetByteList(strBytes.Count));
+                    if (firstString)
+                        newStringPosData.Add(0);
+                    else
+                        newStringPosData.Add(strings.Count);
                     strings.AddRange(strBytes);
                 }
             }
-            data.AddRange(GetByteList(localize.Header, strings.Count));
-            data.AddRange(entry);
-            data.AddRange(strings);
-            return data;
-        }
-        public List<byte> GetByteList(_LocalizeDataStruct_ILDL localize)
-        {
-            List<byte> data = new List<byte>();
-            List<byte> entry = new List<byte>();
-            List<byte> strings = new List<byte>();
 
-            UInt32 stringPos = 0;
-            for (int i = 0; i < localize.Strings.Count; i++)
+            foreach (var e in localize.Entry) //entry data
             {
-                entry.AddRange(GetByteList(localize.Entry[i], stringPos));
-                strings.AddRange(GetByteList(localize.Strings[i], ref stringPos));
+                entry.AddRange(GetByteList(e.ID));
+                int index = localize.Strings.FindIndex(x => x.Pos == e.Pos);
+                if (index == -1 || index >= newStringPosData.Count)
+                {
+                    Logger.Log.Error("Found invalid String Pos Data in writing, so skipping... : " + path);
+                    continue;
+                }
+                entry.AddRange(GetByteList(newStringPosData[index]));
             }
+
             data.AddRange(GetByteList(localize.Header, strings.Count));
             data.AddRange(entry);
             data.AddRange(strings);
@@ -620,25 +659,6 @@ namespace SkyrimPluginEditor
             data.AddRange(GetByteList(header.Count));
             header.Size = (UInt32)stringsSize;
             data.AddRange(GetByteList(header.Size));
-            return data;
-        }
-        public List<byte> GetByteList(_LocalizeEntry entry, UInt32 stringPos)
-        {
-            List<byte> data = new List<byte>();
-            data.AddRange(GetByteList(entry.ID));
-            entry.Pos = stringPos;
-            data.AddRange(GetByteList(entry.Pos));
-            return data;
-        }
-        public List<byte> GetByteList(_LocalizeData localData, ref UInt32 stringPos)
-        {
-            List<byte> data = new List<byte>();
-            List<byte> stringData = GetByteList(localData.Data);
-            localData.Size = (UInt32)stringData.Count;
-            stringPos += 4;
-            stringPos += (UInt32)stringData.Count;
-            data.AddRange(GetByteList(localData.Size));
-            data.AddRange(stringData);
             return data;
         }
 
@@ -742,7 +762,10 @@ namespace SkyrimPluginEditor
             newPlugin.PluginHeader = new _RecordHeader();
             sig = ReadSignature();
             if (sig != "TES4") //not support plugin
+            {
+                Error(sig, _ErrorCode.UnSupported);
                 return _ErrorCode.UnSupported;
+            }
             RecordSig = sig;
             newPlugin.PluginHeader.Signature = sig.ToCharArray();
             newPlugin.PluginHeader.DataSize = ReadUInt32();
@@ -764,7 +787,10 @@ namespace SkyrimPluginEditor
             newPlugin.Header = new _HEDR();
             sig = ReadSignature();
             if (sig != "HEDR") //invalid plugin data structure
+            {
+                Error(sig, _ErrorCode.Invalid);
                 return _ErrorCode.Invalid;
+            }
             newPlugin.Header.Signature = sig.ToCharArray();
             newPlugin.Header.DataSize = ReadUInt16();
             newPlugin.Header.Version = ReadFloat();
@@ -779,15 +805,29 @@ namespace SkyrimPluginEditor
             {
                 if (!isFirst)
                     sig = ReadSignature();
-                if (sig != "OFST" && sig != "DELE" && sig != "CNAM" && sig != "SNAM")
+                if (sig != "OFST" && sig != "DELE" && sig != "CNAM" && sig != "SNAM" && sig != "XXXX")
                     break;
 
                 _Record_Fragment fragment = new _Record_Fragment();
                 ErrorCode = Read(fragment, RecordSig, ref sig);
                 newPlugin.FrontFragment.Add(fragment);
                 if (ErrorCode < 0)
+                {
+                    Error("FrontFragment", ErrorCode);
                     return ErrorCode; //invalid or unsupported or wrong end or end of file
-
+                }
+                if (sig == "XXXX") //Offset data size fragment
+                {
+                    _Record_Fragment XXXX = new _Record_Fragment();
+                    sig = ReadSignature();
+                    ErrorCode = Read(XXXX, 2, BitConverter.ToInt32(fragment.Data, 0), ref sig);
+                    newPlugin.FrontFragment.Add(fragment);
+                    if (ErrorCode < 0)
+                    {
+                        Error(RecordSig, ErrorCode);
+                        return ErrorCode;
+                    }
+                }
                 isFirst = false;
             } while (true);
 
@@ -804,7 +844,10 @@ namespace SkyrimPluginEditor
                 ErrorCode = Read(master, RecordSig, ref sig);
                 newPlugin.MasterPlugin.Add(master);
                 if (ErrorCode < 0)
+                {
+                    Error("MAST", ErrorCode);
                     return ErrorCode; //invalid or unsupported or wrong end or end of file
+                }
 
                 isFirst = false;
             } while (true);
@@ -823,7 +866,7 @@ namespace SkyrimPluginEditor
 
                 if (!isFirst)
                     sig = ReadSignature();
-                if (sig == "GRUP")
+                if (sig != "ONAM" && sig != "SCRN" && sig != "INTV" && sig != "INCC" && sig != "XXXX")
                 {
                     isFirst = true;
                     break;
@@ -832,8 +875,22 @@ namespace SkyrimPluginEditor
                 ErrorCode = Read(fragment, RecordSig, ref sig);
                 newPlugin.BackFragment.Add(fragment);
                 if (ErrorCode < _ErrorCode.Passed)
+                {
+                    Error("", ErrorCode);
                     return ErrorCode; //invalid or unsupported or wrong end or end of file
-
+                }
+                if (sig == "XXXX") //Offset data size fragment
+                {
+                    _Record_Fragment XXXX = new _Record_Fragment();
+                    sig = ReadSignature();
+                    ErrorCode = Read(XXXX, 2, BitConverter.ToInt32(fragment.Data, 0), ref sig);
+                    newPlugin.BackFragment.Add(fragment);
+                    if (ErrorCode < 0)
+                    {
+                        Error(RecordSig, ErrorCode);
+                        return ErrorCode;
+                    }
+                }
                 isFirst = false;
             } while (true);
 
@@ -848,18 +905,22 @@ namespace SkyrimPluginEditor
                 if (sig != "GRUP")
                 {
                     if (ErrorCode == _ErrorCode.WrongHeader)
-                    {
                         sig = ReadSignature();
-                    }
                     if (sig != "GRUP")
+                    {
+                        Error("GRUP", _ErrorCode.Invalid);
                         return _ErrorCode.Invalid;
+                    }
                 }
 
                 _GRUP group = new _GRUP();
                 ErrorCode = Read(group, ref sig);
                 newPlugin.Group.Add(group);
                 if (ErrorCode < 0)
+                {
+                    Error("GRUP", ErrorCode);
                     return ErrorCode; //invalid or unsupported file
+                }
 
                 isFirst = false;
             } while (true);
@@ -913,7 +974,7 @@ namespace SkyrimPluginEditor
             sig = ReadSignature();
             if (sig != "DATA")
             {
-                Error(master.Signature);
+                Error("DATA", _ErrorCode.Invalid);
                 return _ErrorCode.Invalid; //invalid plugin data structure
             }
             master.DATA_Signature = sig.ToCharArray();
@@ -926,8 +987,8 @@ namespace SkyrimPluginEditor
         {
             group.Signature = sig.ToCharArray();
             group.DataSize = ReadUInt32();
-            string type = ReadSignature();
-            group.RecordType = type.ToCharArray();
+            group.GroupInfo = ReadBytes(4);
+            string type = GetString(group.GroupInfo);
             group.GroupType = ReadUInt32();
             group.TimeStamp = ReadUInt16();
             group.Version = ReadUInt16();
@@ -943,17 +1004,20 @@ namespace SkyrimPluginEditor
                 if (IsEndedSize(pos))
                     break;
                 else if (IsExceedSize(pos))
+                {
+                    Error("GRUP", _ErrorCode.Invalid);
                     return _ErrorCode.Invalid;
+                }
 
                 sig = ReadSignature();
                 if (sig == "GRUP")
                 {
                     _GRUP new_group = new _GRUP();
                     ErrorCode = Read(new_group, ref sig);
-                    group.Record.Add(group);
+                    group.Record.Add(new_group);
                     if (ErrorCode < 0)
                     {
-                        Error(group.Signature, ErrorCode);
+                        Error("GRUP", ErrorCode);
                         return ErrorCode; //invalid or unsupported file
                     }
                 }
@@ -964,7 +1028,7 @@ namespace SkyrimPluginEditor
                     group.Record.Add(record);
                     if (ErrorCode < 0)
                     {
-                        Error(group.RecordType, ErrorCode);
+                        Error(GetString(group.GroupInfo), ErrorCode);
                         return ErrorCode; //invalid or unsupported file
                     }
                 }
@@ -1039,7 +1103,10 @@ namespace SkyrimPluginEditor
                     ErrorCode = Read(fragment, RecordSig, ref sig);
                     record.Fragment.Add(fragment);
                     if (ErrorCode < 0)
+                    {
+                        Error(RecordSig, ErrorCode);
                         return ErrorCode;
+                    }
 
                     if (sig == "XXXX") //OFST data size fragment
                     {
@@ -1156,8 +1223,7 @@ namespace SkyrimPluginEditor
                 }
                 else //record
                 {
-                    _Record record = item as _Record;
-                    ApplyEditableDatas_Record(record);
+                    ApplyEditableDatas_Record(item as _Record);
                 }
             }
         }
@@ -1190,23 +1256,16 @@ namespace SkyrimPluginEditor
         {
             List<byte> fileData = new List<byte>();
 
-            List<byte> pluginheaderFragments = new List<byte>();
-            pluginheaderFragments.AddRange(GetByteList(plugin.Header));
-            foreach (_Record_Fragment fragment in plugin.FrontFragment)
-            {
-                pluginheaderFragments.AddRange(GetByteList(fragment));
-            }
+            List<byte> pluginheader = new List<byte>();
+            pluginheader.AddRange(GetByteList(plugin.Header));
+            pluginheader.AddRange(GetByteList(plugin.FrontFragment));
             foreach (_MAST mast in plugin.MasterPlugin)
             {
-                pluginheaderFragments.AddRange(GetByteList(mast));
+                pluginheader.AddRange(GetByteList(mast));
             }
-            foreach (_Record_Fragment fragment in plugin.BackFragment)
-            {
-                pluginheaderFragments.AddRange(GetByteList(fragment));
-            }
-
-            fileData.AddRange(GetByteList(plugin.PluginHeader, pluginheaderFragments.Count));
-            fileData.AddRange(pluginheaderFragments);
+            pluginheader.AddRange(GetByteList(plugin.BackFragment));
+            fileData.AddRange(GetByteList(plugin.PluginHeader, pluginheader.Count));
+            fileData.AddRange(pluginheader);
 
             foreach (_GRUP group in plugin.Group)
             {
@@ -1256,17 +1315,37 @@ namespace SkyrimPluginEditor
             List<byte> data = new List<byte>();
             data.AddRange(GetByteList(fragment.Signature));
             data.AddRange(GetByteList(fragment.DataSize));
-            data.AddRange(GetByteList(fragment.Data));
+
+            if (new string(fragment.Signature) != "XXXX")
+                data.AddRange(GetByteList(fragment.Data));
             return data;
         }
-        public List<byte> GetByteList(_Record_Fragment fragment, int extraSize) //for XXXX record
+        public List<byte> GetByteList(_Record_Fragment fragment, ref int dataSize) //for XXXX next record
         {
-            fragment.DataSize = (UInt16)extraSize;
-            
+            fragment.DataSize = 0;
+            dataSize = fragment.Data.Length;
+
             List<byte> data = new List<byte>();
             data.AddRange(GetByteList(fragment.Signature));
             data.AddRange(GetByteList(fragment.DataSize));
             data.AddRange(GetByteList(fragment.Data));
+            return data;
+        }
+        public List<byte> GetByteList(List<_Record_Fragment> fragments)
+        {
+            List<byte> data = new List<byte>();
+            for (int i = 0; i < fragments.Count; i++)
+            {
+                data.AddRange(GetByteList(fragments[i]));
+                if (new string(fragments[i].Signature) == "XXXX" && i+1 < fragments.Count) //XXXX next record
+                {
+                    i++;
+                    int dataSize = 0;
+                    var xxxx = GetByteList(fragments[i], ref dataSize);
+                    data.AddRange(GetByteList(dataSize));
+                    data.AddRange(xxxx);
+                }
+            }
             return data;
         }
         public List<byte> GetByteList(_MAST mast)
@@ -1302,7 +1381,7 @@ namespace SkyrimPluginEditor
             List<byte> data = new List<byte>();
             data.AddRange(GetByteList(group.Signature));
             data.AddRange(GetByteList(group.DataSize));
-            data.AddRange(GetByteList(group.RecordType));
+            data.AddRange(GetByteList(group.GroupInfo));
             data.AddRange(GetByteList(group.GroupType));
             data.AddRange(GetByteList(group.TimeStamp));
             data.AddRange(GetByteList(group.Version));
@@ -1314,19 +1393,7 @@ namespace SkyrimPluginEditor
         public List<byte> GetByteList(_Record record)
         {
             List<byte> fragmentBytes = new List<byte>();
-            bool isXXXX = false;
-            foreach (_Record_Fragment fragment in record.Fragment)
-            {
-                if (isXXXX)
-                {
-                    fragmentBytes.AddRange(GetByteList(fragment, 2));
-                }
-                else
-                {
-                    fragmentBytes.AddRange(GetByteList(fragment));
-                }
-                isXXXX = (new string(fragment.Signature) == "XXXX");
-            }
+            fragmentBytes.AddRange(GetByteList(record.Fragment));
 
             List<byte> data = new List<byte>();
             if (record.IsCompressed)
