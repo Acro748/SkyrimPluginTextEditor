@@ -19,7 +19,7 @@ namespace SkyrimPluginEditor
     /// </summary>
     public partial class Setting : Window
     {
-        const string Version = "v1.1.0";
+        const string Version = "v1.1.1";
         List<CBLogLevel> LogLevel = new List<CBLogLevel>();
         List<CBEncoding> Encoding = new List<CBEncoding>();
         List<CBStringLanguage> StringLanguage = new List<CBStringLanguage>();
