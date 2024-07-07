@@ -691,7 +691,7 @@ namespace SkyrimPluginEditor
                 {
                     if (data.IsChecked && data.TextAfter != null && data.TextAfter.Length > 0)
                     {
-                        data.TextAfter = Regex.Replace(data.TextAfter, ReplaceSearch, ReplaceResult, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
+                        data.TextAfter = Regex.Replace(data.TextAfter, Regex.Escape(ReplaceSearch), ReplaceResult, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
                         data.TextAfterAlt = MakeAltDataEditField(data);
                         dataEditFieldsEdited[data.Index] = data;
                     }
