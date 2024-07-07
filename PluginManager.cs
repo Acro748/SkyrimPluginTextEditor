@@ -445,7 +445,7 @@ namespace SkyrimPluginEditor
                 using (file = new FileStream(path, FileMode.Open, FileAccess.Read))
                 {
                     ILSTRINGS = new _LocalizeDataStruct();
-                    STRINGS.IsSTRINGS = false;
+                    ILSTRINGS.IsSTRINGS = false;
                     Logger.Log.Info("Read : " + path);
                     ErrorCode = ParseStringData(ILSTRINGS);
                     Logger.Log.Info(ErrorCode + " : " + path);
@@ -460,7 +460,7 @@ namespace SkyrimPluginEditor
                 using (file = new FileStream(path, FileMode.Open, FileAccess.Read))
                 {
                     DLSTRINGS = new _LocalizeDataStruct();
-                    STRINGS.IsSTRINGS = false;
+                    DLSTRINGS.IsSTRINGS = false;
                     Logger.Log.Info("Read : " + path);
                     ErrorCode = ParseStringData(DLSTRINGS);
                     Logger.Log.Info(ErrorCode + " : " + path);
@@ -529,6 +529,7 @@ namespace SkyrimPluginEditor
                     data.Size = ReadUInt32();
                     data.Pos = (UInt32)(file.Position - firstStringsPos);
                     data.Data = ReadString((int)data.Size);
+                    localData.Strings.Add(data);
                 }
                 while(true);
             }
@@ -1108,15 +1109,10 @@ namespace SkyrimPluginEditor
                         return ErrorCode;
                     }
 
-                    if (sig == "XXXX") //OFST data size fragment
+                    if (sig == "XXXX") //XXXX is data size fragment
                     {
                         _Record_Fragment XXXX = new _Record_Fragment();
-                        sig = ReadSignature(); //must be OFST or VMAD
-                        //if (sig != "OFST" && sig != "VMAD")
-                        //{
-                        //    Error(RecordSig);
-                        //    return _ErrorCode.Invalid;
-                        //}
+                        sig = ReadSignature();
                         ErrorCode = Read(XXXX, 2, BitConverter.ToInt32(fragment.Data, 0), ref sig);
                         record.Fragment.Add(fragment);
                         if (ErrorCode < 0)

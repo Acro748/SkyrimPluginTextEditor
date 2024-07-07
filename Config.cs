@@ -270,7 +270,10 @@ namespace SkyrimPluginEditor
             public readonly Dictionary<string, List<string>> LocalizeType = new Dictionary<string, List<string>>
             {
                 { "0000", new List<string> { "FULL" } },
-                { "ARMO", new List<string> { "NAM1" } }
+                { "ARMO", new List<string> { "NAM1" } },
+                { "INFO", new List<string> { "NAM1" } },
+                { "QUST", new List<string> { "CNAM" } },
+                { "BOOK", new List<string> { "CNAM" } }
             };
         }
         private TypeDictionary typeDictionary = new TypeDictionary();
