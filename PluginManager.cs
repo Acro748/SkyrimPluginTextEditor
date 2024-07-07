@@ -543,16 +543,21 @@ namespace SkyrimPluginEditor
                 int index = STRINGS.Entry.FindIndex(x => x.ID == ID);
                 if (index != -1)
                 {
+                    int sindex = STRINGS.Strings.FindIndex(x => x.Pos == STRINGS.Entry[index].Pos);
+                    if (sindex == -1)
+                        return false;
                     STRINGS.Strings[index].Data = Text;
                     return true;
                 }
             }
-
             if (ILSTRINGS != null)
             {
                 int index = ILSTRINGS.Entry.FindIndex(x => x.ID == ID);
                 if (index != -1)
                 {
+                    int sindex = ILSTRINGS.Strings.FindIndex(x => x.Pos == ILSTRINGS.Entry[index].Pos);
+                    if (sindex == -1)
+                        return false;
                     ILSTRINGS.Strings[index].Data = Text;
                     return true;
                 }
@@ -562,6 +567,9 @@ namespace SkyrimPluginEditor
                 int index = DLSTRINGS.Entry.FindIndex(x => x.ID == ID);
                 if (index != -1)
                 {
+                    int sindex = DLSTRINGS.Strings.FindIndex(x => x.Pos == DLSTRINGS.Entry[index].Pos);
+                    if (sindex == -1)
+                        return false;
                     DLSTRINGS.Strings[index].Data = Text;
                     return true;
                 }
