@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -17,19 +19,20 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using WK.Libraries.BetterFolderBrowserNS;
-using static SkyrimPluginEditor.MainWindow;
+using static SkyrimPluginTextEditor.MainWindow;
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     /// <summary>
     /// MoveFile.xaml에 대한 상호 작용 논리
     /// </summary>
     public partial class FileManager : Window
     {
-        List<string> selectedFolders = new List<string>();
-        List<MoveFileSet> files = new List<MoveFileSet>();
-        List<MoveFileSet> nonSkyrimFiles = new List<MoveFileSet>();
-        List<MoveFileSet> filesDisable = new List<MoveFileSet>();
+        private List<string> selectedFolders = new List<string>();
+        private List<MoveFileSet> files = new List<MoveFileSet>();
+        private List<MoveFileSet> nonSkyrimFiles = new List<MoveFileSet>();
+        private List<MoveFileSet> filesDisable = new List<MoveFileSet>();
+        private ConcurrentDictionary<string, MoveFileSet> filesEdited = new ConcurrentDictionary<string, MoveFileSet>();
         List<Extensions> extensionList = new List<Extensions>();
         bool isContentEdited = false;
 
@@ -160,12 +163,14 @@ namespace SkyrimPluginEditor
             LV_ExtensionList_Active(false);
             files.Clear();
             nonSkyrimFiles.Clear();
+            filesEdited.Clear();
+
             Dictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new Dictionary<string, PluginStreamBase._ErrorCode>();
             foreach (var folder in selectedFolders)
             {
                 if (Directory.Exists(folder))
                 {
-                    var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
+                    var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories);
                     if (filesInDirectory.Length > 0)
                     {
                         double fileStep = step / filesInDirectory.Length;
@@ -236,13 +241,15 @@ namespace SkyrimPluginEditor
                 {
                     if (file.IsChecked)
                     {
-                        file.FileAfter = Regex.Replace(file.FileAfter, ReplaceSearch, ReplaceResult, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
+                        file.FileAfter = Util.Replace(file.FileAfter, ReplaceSearch, ReplaceResult, MatchCase);
                         file.DisplayAfter = file.FileAfter;
                         if (FileContent && file.IsContainsContent)
                         {
-                            file.FileContentAfter = Regex.Replace(file.FileContentAfter, ReplaceSearch, ReplaceResult, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
+                            file.FileContentAfter = Util.Replace(file.FileContentAfter, ReplaceSearch, ReplaceResult, MatchCase);
+                            file.TooltipAfter = file.FileContentAfter;
                             file.IsContentEdited = true;
                         }
+                        filesEdited[file.FileBefore] = file;
                     }
                 });
                 LV_FileList_Update();
@@ -411,9 +418,9 @@ namespace SkyrimPluginEditor
                 {
                     ICollectionView view = CollectionViewSource.GetDefaultView(files);
                     view.Refresh();
-                    Task.Delay(TimeSpan.FromTicks(1));
                 }
             }));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FileList_Active(bool Active = true)
         {
@@ -437,9 +444,9 @@ namespace SkyrimPluginEditor
                 {
                     ICollectionView view = CollectionViewSource.GetDefaultView(extensionList);
                     view.Refresh();
-                    Task.Delay(TimeSpan.FromTicks(1));
                 }
             }));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ExtensionList_Active(bool Active = true)
         {
@@ -475,13 +482,13 @@ namespace SkyrimPluginEditor
         private void MI_Save_Click(object sender, RoutedEventArgs e)
         {
             bool fileOverwrite = MI_FileOverwrite.IsChecked;
-            Parallel.ForEach(files, file =>
+            Parallel.ForEach(filesEdited, file =>
             {
-                string sourceFilePath = file.FileBasePath + file.FileBefore;
-                string targetFilePath = file.FileBasePath + file.FileAfter;
-                if (isContentEdited && file.IsContainsContent)
+                string sourceFilePath = file.Value.FileBasePath + file.Value.FileBefore;
+                string targetFilePath = file.Value.FileBasePath + file.Value.FileAfter;
+                if (isContentEdited && file.Value.IsContainsContent)
                 {
-                    File.WriteAllText(sourceFilePath, file.FileContentAfter);
+                    File.WriteAllText(sourceFilePath, file.Value.FileContentAfter);
                 }
                 if (sourceFilePath.ToLower() == targetFilePath.ToLower())
                     return; //don't need move file
@@ -517,11 +524,16 @@ namespace SkyrimPluginEditor
             if (mi.IsChecked)
             {
                 files.AddRange(nonSkyrimFiles);
+                nonSkyrimFiles.Clear();
             }
             else
             {
+                nonSkyrimFiles.AddRange(files.FindAll(x => x.NonSkyrimFile));
+                nonSkyrimFiles.AddRange(filesDisable.FindAll(x => x.NonSkyrimFile));
                 files.RemoveAll(x => x.NonSkyrimFile);
+                filesDisable.RemoveAll(x => x.NonSkyrimFile);
             }
+            FileListUpdate();
             LV_FileList_Sort();
             LV_FileList_Update();
 
@@ -543,10 +555,58 @@ namespace SkyrimPluginEditor
                         file.TooltipAfter = file.FileContentAfter;
                     }
                 });
+                Parallel.ForEach(filesDisable, file =>
+                {
+                    if (file.IsContainsContent)
+                    {
+                        file.TooltipBefore = file.FileContentBefore;
+                        file.TooltipAfter = file.FileContentAfter;
+                    }
+                });
+                Parallel.ForEach(nonSkyrimFiles, file =>
+                {
+                    if (file.IsContainsContent)
+                    {
+                        file.TooltipBefore = file.FileContentBefore;
+                        file.TooltipAfter = file.FileContentAfter;
+                    }
+                });
             }
             else
             {
                 Parallel.ForEach(files, file =>
+                {
+                    if (file.IsContainsContent)
+                    {
+                        if (file.NonSkyrimFile)
+                        {
+                            file.TooltipBefore = file.FileBefore;
+                            file.TooltipAfter = file.FileAfter;
+                        }
+                        else
+                        {
+                            file.TooltipBefore = file.FileBasePath + file.FileBefore;
+                            file.TooltipAfter = file.FileBasePath + file.FileAfter;
+                        }
+                    }
+                });
+                Parallel.ForEach(filesDisable, file =>
+                {
+                    if (file.IsContainsContent)
+                    {
+                        if (file.NonSkyrimFile)
+                        {
+                            file.TooltipBefore = file.FileBefore;
+                            file.TooltipAfter = file.FileAfter;
+                        }
+                        else
+                        {
+                            file.TooltipBefore = file.FileBasePath + file.FileBefore;
+                            file.TooltipAfter = file.FileBasePath + file.FileAfter;
+                        }
+                    }
+                });
+                Parallel.ForEach(nonSkyrimFiles, file =>
                 {
                     if (file.IsContainsContent)
                     {
@@ -778,6 +838,16 @@ namespace SkyrimPluginEditor
             }
         }
 
+        private void FileListUpdate()
+        {
+            var disables = files.FindAll(x => extensionList.FindIndex(y => y.FileExtension == x.FileExtension && !y.IsChecked) != -1);
+            var enables = filesDisable.FindAll(x => extensionList.FindIndex(y => y.FileExtension == x.FileExtension && y.IsChecked) != -1);
+            disables.ForEach(x => files.Remove(x));
+            enables.ForEach(x => filesDisable.Remove(x));
+            files.AddRange(enables);
+            filesDisable.AddRange(disables);
+        }
+
         private void MI_Exit_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
@@ -809,9 +879,6 @@ namespace SkyrimPluginEditor
 
     public class MoveFileSet : INotifyPropertyChanged
     {
-        private bool _IsChecked;
-        private bool _IsSelected;
-
         public string FileBasePath { get; set; }
         public string FileBefore { get; set; }
         public string FileAfter { get; set; }
@@ -824,11 +891,30 @@ namespace SkyrimPluginEditor
 
         public string DisplayBefore { get; set; }
         public string DisplayAfter { get; set; }
-        public string TooltipBefore { get; set; }
-        public string TooltipAfter { get; set; }
+        private string _TooltipBefore;
+        public string TooltipBefore
+        {
+            get { return _TooltipBefore; }
+            set
+            {
+                _TooltipBefore = value;
+                OnPropertyChanged("TooltipBefore");
+            }
+        }
+        private string _TooltipAfter;
+        public string TooltipAfter
+        {
+            get { return _TooltipAfter; }
+            set
+            {
+                _TooltipAfter = value;
+                OnPropertyChanged("TooltipAfter");
+            }
+        }
 
         public bool NonSkyrimFile {  get; set; }
 
+        private bool _IsChecked;
         public bool IsChecked
         {
             get { return _IsChecked; }
@@ -839,6 +925,7 @@ namespace SkyrimPluginEditor
             }
         }
 
+        private bool _IsSelected;
         public bool IsSelected
         {
             get { return _IsSelected; }
@@ -861,11 +948,9 @@ namespace SkyrimPluginEditor
     }
     public class Extensions : INotifyPropertyChanged
     {
-        private bool _IsChecked;
-        private bool _IsSelected;
-
         public string FileExtension { get; set; }
 
+        private bool _IsChecked;
         public bool IsChecked
         {
             get { return _IsChecked; }
@@ -876,6 +961,7 @@ namespace SkyrimPluginEditor
             }
         }
 
+        private bool _IsSelected;
         public bool IsSelected
         {
             get { return _IsSelected; }

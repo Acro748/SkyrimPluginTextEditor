@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     internal class Util
     {
@@ -26,15 +27,14 @@ namespace SkyrimPluginEditor
             return parentT ?? FindParent<T>(parent);
         }
 
-        static public bool IsTextFile(string filename)
+        static public bool IsTextFile(string fileName)
         {
-            string lowFileName = filename.ToLower();
-            return lowFileName.EndsWith(".ini") || lowFileName.EndsWith(".ec") || lowFileName.EndsWith(".txt");
+            return Config.GetSingleton.IsEditableFileContent(fileName);
         }
 
-        static public int IsSkyrimFile(List<string> SplitPath)
+        static public int IsSkyrimFile(List<string> splitPath)
         {
-            return SplitPath.FindIndex(x => x == "meshes" || x == "textures" || x == "interface" || x == "scripts" || x == "strings" || x == "sound" || x == "skse");
+            return splitPath.FindIndex(x => x == "meshes" || x == "textures" || x == "interface" || x == "scripts" || x == "strings" || x == "sound" || x == "skse");
         }
         static public string GetRelativePath(string path)
         {
@@ -129,6 +129,11 @@ namespace SkyrimPluginEditor
                 if (!System.IO.Directory.EnumerateFileSystemEntries(d).Any())
                     System.IO.Directory.Delete(d, false);
             });
+        }
+
+        static public string Replace(string source, string search, string replace, bool MatchCase)
+        {
+            return Regex.Replace(source, Regex.Escape(search), replace, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
         }
     }
 }

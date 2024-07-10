@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34928.147
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkyrimPluginEditor", "SkyrimPluginEditor.csproj", "{DA760B86-1959-4655-B339-AF55F155EB77}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkyrimPluginTextEditor", "SkyrimPluginTextEditor.csproj", "{DA760B86-1959-4655-B339-AF55F155EB77}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

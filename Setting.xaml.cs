@@ -12,14 +12,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     /// <summary>
     /// Setting.xaml에 대한 상호 작용 논리
     /// </summary>
     public partial class Setting : Window
     {
-        const string Version = "v1.1.2";
+        const string Version = "v1.1.3";
         List<CBLogLevel> LogLevel = new List<CBLogLevel>();
         List<CBEncoding> Encoding = new List<CBEncoding>();
         List<CBStringLanguage> StringLanguage = new List<CBStringLanguage>();

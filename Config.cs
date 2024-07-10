@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Shapes;
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     public class Config
     {
@@ -197,6 +197,11 @@ namespace SkyrimPluginEditor
                 return true;
             return false;
         }
+        public List<string> GetEditableFileContentList() {  return typeDictionary.EditableFileContentList; }
+        public bool IsEditableFileContent(string fileName)
+        {
+            return GetEditableFileContentList().FindIndex(x => fileName.EndsWith(x, StringComparison.OrdinalIgnoreCase)) != -1;
+        }
 
         public class ConfigContainer
         {
@@ -259,6 +264,10 @@ namespace SkyrimPluginEditor
                 { "INFO", new List<string>
                 {
                     "NAM1"
+                } },
+                { "RACE", new List<string>
+                {
+                    "ANAM"
                 } }
             };
             public readonly Dictionary<string, List<string>> EditableBlackList = new Dictionary<string, List<string>>
@@ -274,6 +283,10 @@ namespace SkyrimPluginEditor
                 { "INFO", new List<string> { "NAM1" } },
                 { "QUST", new List<string> { "CNAM" } },
                 { "BOOK", new List<string> { "CNAM" } }
+            };
+            public readonly List<string> EditableFileContentList = new List<string>
+            {
+                ".ini", ".ec", ".txt", ".xml", ".jslot", ".psc"
             };
         }
         private TypeDictionary typeDictionary = new TypeDictionary();

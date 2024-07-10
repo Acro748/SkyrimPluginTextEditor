@@ -11,7 +11,7 @@ using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using log4net.Core;
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     public class Logger
     {

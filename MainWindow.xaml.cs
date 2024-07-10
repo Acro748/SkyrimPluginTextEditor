@@ -35,14 +35,14 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using WK.Libraries.BetterFolderBrowserNS;
-using static SkyrimPluginEditor.PluginData;
-using static SkyrimPluginEditor.PluginStreamBase;
+using static SkyrimPluginTextEditor.PluginData;
+using static SkyrimPluginTextEditor.PluginStreamBase;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 #pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     /// <summary>
     /// MainWindow.xaml에 대한 상호 작용 논리
@@ -76,7 +76,7 @@ namespace SkyrimPluginEditor
             CB_AddTextType.SelectedIndex = 0;
             LV_PluginList_Update(true);
             LV_FragmentList_Update(true);
-            CB_MasterPluginBefore_Update();
+            CB_MasterPluginBefore_Update(true);
             LV_ConvertList_Update(true);
 
             LV_ConvertList_Active(false);
@@ -329,9 +329,9 @@ namespace SkyrimPluginEditor
                             {
                                 fragmentList[index].FromRecordList.Add(item.RecordType);
                                 if (fragmentList[index].FromRecordList.Count >= 10 && fragmentList[index].FromRecordList.Count % 10 == 0)
-                                    fragmentList[index].FromRecoreds += "\n" + item.RecordType;
+                                    fragmentList[index].FromRecoredsToolTip += "\n" + item.RecordType;
                                 else
-                                    fragmentList[index].FromRecoreds += ", " + item.RecordType;
+                                    fragmentList[index].FromRecoredsToolTip += ", " + item.RecordType;
                             }
                             continue;
                         }
@@ -340,7 +340,7 @@ namespace SkyrimPluginEditor
                             IsChecked = true,
                             FragmentType = item.FragmentType,
                             IsSelected = false,
-                            FromRecoreds = item.RecordType,
+                            FromRecoredsToolTip = item.RecordType,
                             FromRecordList = new List<string> { item.RecordType },
                         });
                     }
@@ -426,10 +426,10 @@ namespace SkyrimPluginEditor
                             IsSelected = false,
                             TextBefore = item.Text,
                             TextAfter = item.Text,
-                            TextBeforeAlt = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
-                            TextAfterAlt = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
+                            TextBeforeDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
+                            TextAfterDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
                             Index = count,
-                            PluginPath = data.Value.GetFilePath(),
+                            ToolTip = data.Value.GetFilePath(),
                             EditableIndex = item.EditableIndex
                         });
                         count++;
@@ -655,7 +655,7 @@ namespace SkyrimPluginEditor
                                 if (data.IsChecked)
                                 {
                                     data.TextAfter = AddText + data.TextAfter;
-                                    data.TextAfterAlt = MakeAltDataEditField(data);
+                                    data.TextAfterDisplay = MakeAltDataEditField(data);
                                     dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
                                 }
                             });
@@ -668,7 +668,7 @@ namespace SkyrimPluginEditor
                                 if (data.IsChecked)
                                 {
                                     data.TextAfter = data.TextAfter + AddText;
-                                    data.TextAfterAlt = MakeAltDataEditField(data);
+                                    data.TextAfterDisplay = MakeAltDataEditField(data);
                                     dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
                                 }
                             });
@@ -691,8 +691,8 @@ namespace SkyrimPluginEditor
                 {
                     if (data.IsChecked && data.TextAfter != null && data.TextAfter.Length > 0)
                     {
-                        data.TextAfter = Regex.Replace(data.TextAfter, Regex.Escape(ReplaceSearch), ReplaceResult, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
-                        data.TextAfterAlt = MakeAltDataEditField(data);
+                        data.TextAfter = Util.Replace(data.TextAfter, ReplaceSearch, ReplaceResult, MatchCase);
+                        data.TextAfterDisplay = MakeAltDataEditField(data);
                         dataEditFieldsEdited[data.Index] = data;
                     }
                 });
@@ -899,7 +899,7 @@ namespace SkyrimPluginEditor
             {
                 found.AddRange(dataEditFieldsDisable.FindAll(x =>
                     inactiveList.FindIndex(y =>
-                        (y.PluginPath != "0000" ? x.PluginPath == y.PluginPath : true)
+                        (y.PluginPath != "0000" ? x.ToolTip == y.PluginPath : true)
                         && (y.RecordType != "0000" ? x.RecordType == y.RecordType : true)
                         && (y.FragmentType != "0000" ? x.FragmentType == y.FragmentType : true)
                         ) == -1
@@ -911,7 +911,7 @@ namespace SkyrimPluginEditor
             {
                 found.AddRange(dataEditFields.FindAll(x =>
                     inactiveList.FindIndex(y =>
-                        (y.PluginPath != "0000" ? x.PluginPath == y.PluginPath : true)
+                        (y.PluginPath != "0000" ? x.ToolTip == y.PluginPath : true)
                         && (y.RecordType != "0000" ? x.RecordType == y.RecordType : true)
                         && (y.FragmentType != "0000" ? x.FragmentType == y.FragmentType : true)
                     ) != -1
@@ -924,11 +924,19 @@ namespace SkyrimPluginEditor
             LV_ConvertList_Active(true);
         }
 
-        private void CB_MasterPluginBefore_Update()
+        private void CB_MasterPluginBefore_Update(bool binding = false)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
-                CB_MasterPluginBefore.ItemsSource = masterPluginList;
+                if (binding)
+                {
+                    CB_MasterPluginBefore.ItemsSource = masterPluginList;
+                }
+                else
+                {
+                    ICollectionView view = CollectionViewSource.GetDefaultView(masterPluginList);
+                    view.Refresh();
+                }
                 CB_MasterPluginBefore.SelectedIndex = 0;
             }));
         }
@@ -1058,7 +1066,7 @@ namespace SkyrimPluginEditor
                 {
                     plugin.Value.EditEditableList("TES4", "MAST", item.MasterPluginNameOrig, item.MasterPluginName);
                 }
-                var datafound = dataEditFieldsEdited.Where(x => x.Value.PluginPath == plugin.Key);
+                var datafound = dataEditFieldsEdited.Where(x => x.Value.ToolTip == plugin.Key);
                 foreach (var item in datafound)
                 {
                     plugin.Value.EditEditableList(item.Value.EditableIndex, item.Value.TextAfter);
@@ -1410,14 +1418,21 @@ namespace SkyrimPluginEditor
     }
     public class FragmentTypeData : INotifyPropertyChanged
     {
-        private bool _IsChecked;
-        private bool _IsSelected;
-
         public string FragmentType { get; set; }
-        public string FromRecoreds { get; set; }
+        private string _FromRecoredsToolTip;
+        public string FromRecoredsToolTip
+        {
+            get { return _FromRecoredsToolTip; }
+            set
+            {
+                _FromRecoredsToolTip = value;
+                OnPropertyChanged("FromRecoredsToolTip");
+            }
+        }
 
         public List<string> FromRecordList { get; set; }
 
+        private bool _IsChecked;
         public bool IsChecked
         {
             get { return _IsChecked; }
@@ -1428,6 +1443,7 @@ namespace SkyrimPluginEditor
             }
         }
 
+        private bool _IsSelected;
         public bool IsSelected
         {
             get { return _IsSelected; }
@@ -1454,29 +1470,58 @@ namespace SkyrimPluginEditor
         public string RecordType { get; set; }
         public string FragmentType { get; set; }
     }
-    public class MasterPluginField
+    public class MasterPluginField : INotifyPropertyChanged
     {
-        public string MasterPluginName { get; set; }
+        private string _MasterPluginName;
+        public string MasterPluginName 
+        { 
+            get { return _MasterPluginName; }
+            set
+            {
+                _MasterPluginName = value;
+                OnPropertyChanged("MasterPluginName");
+            }
+        }
         public string MasterPluginNameOrig { get; set; }
         public string FromPlugins { get; set; }
+        public bool IsEdited { get; set; }
+
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyname)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyname));
+            }
+        }
     }
     public class DataEditField : INotifyPropertyChanged
     {
-        private bool _IsChecked;
-        private bool _IsSelected;
-
         public string PluginName { get; set; }
         public string RecordType { get; set; }
         public string FragmentType { get; set; }
         public string TextBefore { get; set; }
-        public string TextBeforeAlt { get; set; }
+        public string TextBeforeDisplay { get; set; }
         public string TextAfter { get; set; }
-        public string TextAfterAlt { get; set; }
+        public string TextAfterDisplay { get; set; }
 
         public UInt64 Index { get; set; }
-        public string PluginPath { get; set; }
+        private string _ToolTip;
+        public string ToolTip
+        {
+            get { return _ToolTip; }
+            set
+            {
+                _ToolTip = value;
+                OnPropertyChanged("ToolTip");
+            }
+        }
         public int EditableIndex { get; set; }
+        public bool IsEdited { get; set; }
 
+        private bool _IsChecked;
         public bool IsChecked
         {
             get { return _IsChecked; }
@@ -1487,6 +1532,7 @@ namespace SkyrimPluginEditor
             }
         }
 
+        private bool _IsSelected;
         public bool IsSelected
         {
             get { return _IsSelected; }

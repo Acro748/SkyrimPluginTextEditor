@@ -13,11 +13,11 @@ using System.Threading.Tasks;
 using System.Web.UI.WebControls;
 using System.Windows.Interop;
 using System.Windows.Markup;
-using static SkyrimPluginEditor.PluginData;
+using static SkyrimPluginTextEditor.PluginData;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Resources.ResXFileRef;
 
-namespace SkyrimPluginEditor
+namespace SkyrimPluginTextEditor
 {
     public class PluginStreamBase
     {
@@ -744,6 +744,7 @@ namespace SkyrimPluginEditor
         public List<_Editable> GetEditableListOfRecord() { return editableList.FindAll(x => x.FragmentType != "MAST"); }
 
         LocalizeData Localize = null;
+        bool IsEdited = false;
 
         public PluginManager(string pluginPath) : base(pluginPath)
         {
@@ -1175,7 +1176,10 @@ namespace SkyrimPluginEditor
             int index = editableList.FindIndex(x => x.RecordType == RecordType && x.FragmentType == FragmentType && x.Text == TextOrig);
             if (index == -1)
                 return false;
+            if (TextOrig == Text)
+                return true;
             editableList[index].Text = Text;
+            IsEdited = true;
             return true;
         }
         public bool EditEditableList(int editableIndex, string Text)
@@ -1186,10 +1190,14 @@ namespace SkyrimPluginEditor
             if (index == -1)
                 return false;
             editableList[index].Text = Text;
+            IsEdited = true;
             return true;
         }
         public void ApplyEditableDatas()
         {
+            if (!IsEdited)
+                return;
+
             foreach (_Record_Fragment fragment in plugin.FrontFragment)
             {
                 ApplyEditableDatas_Record_Fragment(fragment);
@@ -1258,6 +1266,9 @@ namespace SkyrimPluginEditor
 
         public void Write()
         {
+            if (!IsEdited)
+                return;
+
             List<byte> fileData = new List<byte>();
 
             List<byte> pluginheader = new List<byte>();
