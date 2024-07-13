@@ -45,7 +45,7 @@ namespace SkyrimPluginTextEditor
             this.Width = Config.GetSingleton.GetFileManager_Width();
             LV_FileList_Update(true);
             LV_ExtensionList_Update(true);
-            MI_Reset_Active(false);
+            MI_Reset_Active(true);
             MI_Save_Active(false);
             GetFiles();
 

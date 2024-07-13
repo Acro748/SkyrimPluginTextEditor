@@ -546,7 +546,7 @@ namespace SkyrimPluginTextEditor
                     int sindex = STRINGS.Strings.FindIndex(x => x.Pos == STRINGS.Entry[index].Pos);
                     if (sindex == -1)
                         return false;
-                    STRINGS.Strings[index].Data = Text;
+                    STRINGS.Strings[sindex].Data = Text;
                     return true;
                 }
             }
@@ -558,7 +558,7 @@ namespace SkyrimPluginTextEditor
                     int sindex = ILSTRINGS.Strings.FindIndex(x => x.Pos == ILSTRINGS.Entry[index].Pos);
                     if (sindex == -1)
                         return false;
-                    ILSTRINGS.Strings[index].Data = Text;
+                    ILSTRINGS.Strings[sindex].Data = Text;
                     return true;
                 }
             }
@@ -570,7 +570,7 @@ namespace SkyrimPluginTextEditor
                     int sindex = DLSTRINGS.Strings.FindIndex(x => x.Pos == DLSTRINGS.Entry[index].Pos);
                     if (sindex == -1)
                         return false;
-                    DLSTRINGS.Strings[index].Data = Text;
+                    DLSTRINGS.Strings[sindex].Data = Text;
                     return true;
                 }
             }

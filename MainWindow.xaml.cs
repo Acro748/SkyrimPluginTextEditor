@@ -188,7 +188,7 @@ namespace SkyrimPluginTextEditor
             LV_FragmentList_Active(false);
             LV_ConvertList_Active(false);
             CB_MasterPluginBefore_Active(false);
-            MI_Reset_Active(false);
+            MI_Reset_Active(true);
             MI_Save_Active(false);
             MI_FileManager_Active(false);
             MI_OpenFolder_Active(false);
@@ -701,7 +701,6 @@ namespace SkyrimPluginTextEditor
             }
 
             BT_Apply_Update();
-            MI_Reset_Active();
             MI_Save_Active();
         }
 
