@@ -55,7 +55,7 @@ namespace SkyrimPluginTextEditor
             initialDone = true;
         }
 
-        public bool IsInitialized() { return initialDone; }
+        public bool IsInit() { return initialDone; }
 
         private void Search_Folder()
         {

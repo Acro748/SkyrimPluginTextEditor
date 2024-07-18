@@ -1712,7 +1712,7 @@ namespace SkyrimPluginTextEditor
                     return;
                 fm = new FileManager(selectedFolders);
                 fm.Show();
-                while(!fm.IsInitialized())
+                while(!fm.IsInit())
                 {
                     Task.Delay(100);
                 }
