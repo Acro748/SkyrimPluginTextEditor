@@ -57,41 +57,6 @@ namespace SkyrimPluginTextEditor
 
         public bool IsInit() { return initialDone; }
 
-        private void Search_Folder()
-        {
-            var folderBrowser = new OpenFolderDialog();
-
-            //browser initial
-            folderBrowser.Title = "Select plugin folders...";
-            folderBrowser.DefaultDirectory = Config.GetSingleton.GetDefaultPath();
-            folderBrowser.Multiselect = true;
-
-            if (folderBrowser.ShowDialog() ?? false)
-            {
-                selectedFolders.Clear();
-                selectedFolders = folderBrowser.FolderNames.ToList();
-            }
-            else
-            {
-                return;
-            }
-
-            Task.Run(async () => { GetFiles(); });
-
-            string fullFolderTextBox = "";
-            bool firstFolder = true;
-            foreach (string folder in selectedFolders)
-            {
-                if (!firstFolder)
-                {
-                    fullFolderTextBox += ", ";
-                }
-                fullFolderTextBox += folder;
-                firstFolder = false;
-            }
-            Logger.Log.Info("[MoveFile] Selected Folder(s) : " + fullFolderTextBox);
-        }
-
         private void GetFile(string path, object tmpLock)
         {
             string fileName = System.IO.Path.GetFileName(path);
