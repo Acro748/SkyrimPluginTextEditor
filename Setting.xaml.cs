@@ -19,15 +19,19 @@ namespace SkyrimPluginTextEditor
     /// </summary>
     public partial class Setting : Window
     {
-        const string Version = "v1.1.3";
-        List<CBLogLevel> LogLevel = new List<CBLogLevel>();
-        List<CBEncoding> Encoding = new List<CBEncoding>();
-        List<CBStringLanguage> StringLanguage = new List<CBStringLanguage>();
+        private List<CBLogLevel> LogLevel = new List<CBLogLevel>();
+        private List<CBEncoding> Encoding = new List<CBEncoding>();
+        private List<CBStringLanguage> StringLanguage = new List<CBStringLanguage>();
+        private bool isChangedEncoding = false;
+        private bool isChangedStringLanguage = false;
+        
+        public bool IsChangedEncoding() { return isChangedEncoding; }
+        public bool IsChangedStringLanguage() { return isChangedStringLanguage; }
 
         public Setting()
         {
             InitializeComponent();
-            TB_Version.Text = Version;
+            TB_Version.Text = App.Version;
             InitialLogLevel();
             InitialEncoding();
             InitialStringLanguage();
@@ -60,6 +64,7 @@ namespace SkyrimPluginTextEditor
                 Encoding.Add(new CBEncoding() { Encoding_ = i } );
             }
             CB_Encoding.ItemsSource = Encoding;
+            isChangedEncoding = false;
         }
         private void InitialStringLanguage()
         {
@@ -69,6 +74,7 @@ namespace SkyrimPluginTextEditor
             }
             CB_StringLanguage.ItemsSource = StringLanguage;
             CB_StringLanguage.SelectedIndex = 0;
+            isChangedStringLanguage = false;
         }
 
         private void CB_StringLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -76,6 +82,11 @@ namespace SkyrimPluginTextEditor
             if (CB_StringLanguage.SelectedIndex == 0)
                 return;
             TB_StringLanguage.Text = (CB_StringLanguage.SelectedItem as CBStringLanguage).Language_.ToString();
+            isChangedStringLanguage = true;
+        }
+        private void CB_Encoding_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            isChangedEncoding = true;
         }
 
         private void BT_SetAsDefault_Click(object sender, RoutedEventArgs e)

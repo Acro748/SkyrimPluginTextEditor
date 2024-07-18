@@ -1,21 +1,10 @@
-﻿using ICSharpCode.SharpZipLib.Core;
-using ICSharpCode.SharpZipLib.Zip.Compression;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
-using log4net.Core;
+﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using System.Web.UI.WebControls;
-using System.Windows.Interop;
-using System.Windows.Markup;
-using static SkyrimPluginTextEditor.PluginData;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Resources.ResXFileRef;
 
 namespace SkyrimPluginTextEditor
 {

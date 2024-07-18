@@ -1,19 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DA760B86-1959-4655-B339-AF55F155EB77}</ProjectGuid>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>SkyrimPluginTextEditor</RootNamespace>
-    <AssemblyName>SkyrimPluginTextEditor</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <WarningLevel>4</WarningLevel>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>게시\</PublishUrl>
     <Install>true</Install>
@@ -29,28 +17,27 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>
+    </DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>none</DebugType>
     <DocumentationFile>
     </DocumentationFile>
   </PropertyGroup>
@@ -60,148 +47,913 @@
   <PropertyGroup>
     <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
-  <PropertyGroup />
+  <PropertyGroup>
+    <StartupObject>SkyrimPluginTextEditor.App</StartupObject>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BetterFolderBrowser, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\BetterFolderBrowser.1.2.0\lib\BetterFolderBrowser.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=1.4.2.13, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
-      <HintPath>packages\SharpZipLib.1.4.2\lib\netstandard2.0\ICSharpCode.SharpZipLib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="log4net, Version=2.0.17.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>packages\log4net.2.0.17\lib\net45\log4net.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\System.Threading.Tasks.Extensions.4.5.2\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Web" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="WindowsBase" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
+    <Compile Remove="packages\**" />
+    <EmbeddedResource Remove="packages\**" />
+    <None Remove="packages\**" />
+    <Page Remove="packages\**" />
   </ItemGroup>
   <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </ApplicationDefinition>
-    <Compile Include="FileManager.xaml.cs">
-      <DependentUpon>FileManager.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Setting.xaml.cs">
-      <DependentUpon>Setting.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Util.cs" />
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Config.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Page Include="FileManager.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Setting.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <PackageReference Include="log4net" Version="2.0.17" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SystemWebAdapters" Version="1.4.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PluginManager.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <None Include="packages.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
+    <Compile Remove="external\niflyswig\niflysharp\AdditionalDataBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\AdditionalDataInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\AdditionalGeomData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\AlphaFormat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayfloat_12.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayfloat_16.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayfloat_4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayfloat_6.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayuint16_6.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayuint8_3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayuint8_4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\arrayVector3_3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\AVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BallAndSocketDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkAabbPhantom.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBallAndSocketConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBallSocketConstraintChain.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBlendCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBlendController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBoxShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBreakableConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkBvTreeShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCapsuleShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCMSDBigTris.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCMSDChunk.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCMSDMaterial.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCMSDTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCompressedMeshShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkCompressedMeshShapeData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkConvexListShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkConvexShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkConvexTransformShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkConvexVerticesShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkEntity.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkHeightFieldShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkHingeConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkLimitedForceConstraintMotor.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkLimitedHingeConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkLiquidAction.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkListShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkMalleableConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkMoppBvTreeShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkMultiSphereShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkNiCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkNiTriStripsShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkNPCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkOrientHingedBodyAction.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPackedNiTriStripsShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPhantom.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPhysicsSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPlaneShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPoseArray.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPositionConstraintMotor.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkPrismaticConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRagdollConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRagdollSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRagdollTemplate.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRagdollTemplateData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRefObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRigidBody.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkRigidBodyT.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkSerializable.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkShapeCollection.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkShapePhantom.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkSimpleShapePhantom.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkSPCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkSphereRepShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkSphereShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkSpringDamperConstraintMotor.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkStiffSpringConstraint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkTransformShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkVelocityConstraintMotor.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\bhkWorldObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BillboardMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoneIndices.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoneLOD.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoneMatrix.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BonePose.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoneTranslation.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoneTranslations.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoneWeightsSort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoundingSphere.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoundingVolume.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoundVolumeType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BoxBV.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSAnimNote.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSAnimNotes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSBehaviorGraphExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSBlastNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSBoneLODExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSBound.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSClothExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSConnectPoint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSConnectPointChildren.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSConnectPointParents.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSCPCullingType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDamageStage.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDebrisNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDecalPlacementVectorExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDismemberSkinInstance.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDistantObjectLargeRefExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDistantTreeShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSDynamicTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSEffectShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSEffectShaderPropertyColorController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSEffectShaderPropertyFloatController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSEyeCenterExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSFaceGenNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSFadeNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSFrustumFOVController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSFurnitureMarker.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSFurnitureMarkerNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSGeometry.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSGeometryMesh.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSGeometryMeshData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSGeometrySegmentData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSInvMarker.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLagBoneController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLeafAnimNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLightingShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLightingShaderPropertyColorController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLightingShaderPropertyFloatController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLightingShaderPropertyShaderType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLightingShaderPropertyUShortController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSLODTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMasterParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMaterialEmittanceMultController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMeshLODTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMultiBound.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMultiBoundAABB.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMultiBoundData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMultiBoundNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMultiBoundOBB.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSMultiBoundSphere.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSNiAlphaPropertyTestRefController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSOrderedNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPackedAdditionalDataBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPackedAdditionalGeometryData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPackedCombinedSharedGeomDataExtra.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPackedGeomData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPackedGeomDataCombined.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPackedGeomObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSParentVelocityModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPositionData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSProceduralLightningController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysArrayEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysHavokUpdateModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysInheritVelocityModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysLODModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysMultiTargetEmitterCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysRecycleBoundModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysScaleModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysSimpleColorModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysStripUpdateModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSPSysSubTexModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSRangeNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSRefractionFirePeriodController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSRefractionStrengthController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSResourceID.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSRotAccumTransfInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSSegmentedTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSShaderLightingProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSShaderNoLightingProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSShaderPPLightingProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSShaderTextureSet.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSShaderType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSSkinBoneData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSSkinInstance.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSSkyShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSStripParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSStripPSysData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSSubIndexTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSTextureArray.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSTreadTransfInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSTreadTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSTreadTransformData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSTreeNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSValueNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSValueNodeFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSVertexData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSWArray.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSWaterShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSWeakReferenceNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSWindModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSXFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\BSXFlagsEnum.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ByteColor3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ByteColor4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\CapsuleBV.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\CollisionMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Color3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Color4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ConsistencyType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ConstraintData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ControllerLink.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\CoordGenType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\CycleType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\DecalVectorBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\DecayType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\dequebool.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\DistantLODShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\DrawMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Edge.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\EffectType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\EmitFrom.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Face.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Fallout4ShaderPropertyFlags1.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Fallout4ShaderPropertyFlags2.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ForceType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\FurniturePosition.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\GeomMorpherFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\HairShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\HalfSpaceBV.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\HavokFilter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\HingeDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkConstraintType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkPackedNiTriStripsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkResponseType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkSubPartData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkTriangleData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkTriangleNormalData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\hkWorldObjCInfoProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\InterpBlendFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\InterpBlendItem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\kd_matcher.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Lighting30ShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\LimitedHingeDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\LODRange.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\LookAtFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MatchGroup.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Matrix3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Matrix4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MatTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MipMapFormat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MipMapInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Morph.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MorphWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MotorDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\MotorType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAdditionalGeometryData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAlphaController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAlphaProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAmbientLight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAnimationKeyGroupColor4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAnimationKeyGroupfloat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAnimationKeyGroupuchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAnimationKeyGroupVector3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAutoNormalParticles.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAutoNormalParticlesData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiAVObjectPalette.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBillboardNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBinaryExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlendBoolInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlendFloatInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlendInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlendPoint3Interpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlendTransformInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefAdditionalGeomData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArraybhkConvexShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArraybhkEntity.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArraybhkRigidBody.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArraybhkSerializable.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArraybhkShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayBSAnimNote.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayBSAnimNotes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayBSMasterParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiControllerManager.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiControllerSequence.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiDynamicEffect.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiObjectNET.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiPSysColliderManager.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiPSysModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiSourceTexture.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefArrayNiTriStripsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefbhkCompressedMeshShapeData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefbhkConvexShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefbhkEntity.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefbhkRigidBody.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefbhkSerializable.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefbhkShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSAnimNote.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSAnimNotes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSMasterParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSMultiBound.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSMultiBoundData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSShaderTextureSet.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefBSSkinBoneData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefhkPackedNiTriStripsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiAlphaProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiBoneContainer.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiBoolData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiBSplineBasisData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiBSplineData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiColorData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiControllerManager.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiControllerSequence.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiDefaultAVObjectPalette.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiDynamicEffect.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiFloatData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiFloatInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiGeometryData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiInterpController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiLODData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiMorphData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiObjectNET.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPalette.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPoint3Interpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPosData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPSysCollider.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPSysColliderManager.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPSysData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPSysModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiPSysSpawnModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiShader.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiSkinData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiSkinPartition.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiSourceTexture.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiTextKeyExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiTimeController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiTransformData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiTriStripsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefNiUVData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefShortArrayBSAnimNote.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefShortArrayBSAnimNotes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefShortArrayNiAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBlockRefTextureRenderData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBone.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBoneContainer.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBoneLODController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBoolData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBooleanExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBoolInterpController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBoolInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBoolTimelineInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSBoneLODController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineBasisData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineCompFloatInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineCompPoint3Interpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineCompTransformInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineFloatInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplinePoint3Interpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiBSplineTransformInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiCamera.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiCollisionData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiCollisionObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiColorData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiColorExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiControllerManager.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiControllerSequence.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiDefaultAVObjectPalette.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiDirectionalLight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiDitherProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiDynamicEffect.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiEndian.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiExtraDataController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFactory.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFactoryRegister.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NifFile.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFileVersion.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFlipController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NifLoadOptions.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFloatData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFloatExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFloatExtraDataController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFloatInterpController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFloatInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFloatsExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\niflycpp.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\niflycppPINVOKE.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiFogProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NifSaveOptions.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NifSegmentationInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NifSegmentInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NifSubSegmentInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiGeometry.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiGeometryData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiGeomMorpherController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiHeader.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiHeaderBase.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiIntegerExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiIntegersExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiInterpController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiIStream.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiKeyBasedInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiKeyframeController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiKeyframeData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiKeyType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLightColorController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLightDimmerController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLightRadiusController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLines.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLinesData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLODData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLODNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLookAtController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiLookAtInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiMaterialColorController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiMaterialProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiMeshParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiMeshPSysData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiMorphData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiMultiTargetTransformController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiObjectNET.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiOStream.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPalette.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiParticleMeshes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiParticleMeshesData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiParticles.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiParticlesData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiParticleSystem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPathController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPathInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPersistentSrcTextureRendererData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPixelData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPlane.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPoint3InterpController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPoint3Interpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPointLight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPosData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysAgeDeathModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysAirFieldAirFrictionCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysAirFieldInheritVelocityCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysAirFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysAirFieldSpreadCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysBombModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysBoundUpdateModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysBoxEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysCollider.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysColliderManager.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysColorModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysCylinderEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysDragFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysDragModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterCtlrData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterDeclinationCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterDeclinationVarCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterInitialRadiusCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterLifeSpanCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterPlanarAngleCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterPlanarAngleVarCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysEmitterSpeedCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysFieldAttenuationCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysFieldMagnitudeCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysFieldMaxDistanceCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysGravityFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysGravityModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysGravityStrengthCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysGrowFadeModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysInitialRotAngleCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysInitialRotAngleVarCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysInitialRotSpeedCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysInitialRotSpeedVarCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysMeshEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysMeshUpdateModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysModifierActiveCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysModifierBoolCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysModifierCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysModifierFloatCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysPlanarCollider.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysPositionModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysRadialFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysResetOnLoopCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysRotationModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysSpawnModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysSphereEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysSphericalCollider.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysTurbulenceFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysUpdateCtlr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysVolumeEmitter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiPSysVortexFieldModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiRangeLODData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiRef.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiRefArray.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiRollController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiRotatingParticles.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiRotatingParticlesData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiScreenElements.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiScreenElementsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiScreenLODData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSequence.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSequenceStreamHelper.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiShadeProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiShader.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSingleInterpController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSkinData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSkinInstance.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSkinPartition.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSortAdjustNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSourceCubeMap.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSourceTexture.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSpecularProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSpotLight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStencilProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStreamBase.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStreamReversible.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiString.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStringExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStringPalette.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStringRef.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStringsExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiStringVector.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSwitchFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiSwitchNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTextKey.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTextKeyExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTexture.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTextureEffect.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTextureTransformController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTexturingProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTimeController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTransformController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTransformData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTransformInterpolator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTriBasedGeom.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTriBasedGeomData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTriShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTriShapeData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTriStrips.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiTriStripsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiUnknown.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiUVController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiUVData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBasebhkCMSDMaterial.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBasebhkCMSDTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseBoneMatrix.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseBoundingSphere.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseBSDismemberSkinInstancePartitionInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseBSPackedGeomDataCombined.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseByteColor4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBasechar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBasefloat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBasehalf.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseHavokFilter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBasehkSubPartData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseLODRange.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseMipMapInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseNiString.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseNiStringRef.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseshort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseuchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseuint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseushort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseushortushort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseVector3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBaseVector4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorbhkCMSDMaterial.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorbhkCMSDTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBoneMatrix.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBoundingSphere.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBSDismemberSkinInstancePartitionInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorBSPackedGeomDataCombined.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorByteColor4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorfloat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorhalf.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorHavokFilter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorhkSubPartData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorLODRange.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorMipMapInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorshort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectoruchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectoruint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorushort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorushortushort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorVector3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVectorVector4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVersion.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVertexColorProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVisController.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiVisData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiWireframeProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\NiZBufferProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\obj\Debug\net5.0\nifly.AssemblyInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\obj\Release\net5.0\nifly.AssemblyInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\obj\Release\net8.0\.NETCoreApp,Version=v8.0.AssemblyAttributes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\obj\Release\net8.0\nifly.AssemblyInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\OptOptions.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\OptResult.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PartitionFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PathFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PixelComponent.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PixelFormat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PixelFormatComponent.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PixelLayout.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PixelRepresentation.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PixelTiling.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PlatformID.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PolygonInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PrismaticDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\PropagationMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Quaternion.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\QuaternionXYZW.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\QuatTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\RagdollDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Rect.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\setNiRef.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\ShaderTexDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SkinAttach.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SkinWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SkyObjectType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SkyrimShaderPropertyFlags1.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SkyrimShaderPropertyFlags2.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SkyShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SortingMatcher.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SortingMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\StencilMasks.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\StiffSpringDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\StripsInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_char.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_float.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_half_float__half.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_int.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__kd_query_result.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiAnimationKeyT_float_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiAnimationKeyT_nifly__Color4_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiAnimationKeyT_nifly__Quaternion_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiAnimationKeyT_nifly__Vector3_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiAnimationKeyT_unsigned_char_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiBlockPtrArrayT_nifly__NiNode_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiStringRefVectorT_uint32_t_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_nifly__NiVectorT_nifly__Vector3_uint32_t_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_short.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__filesystem__path.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__istream.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__ostream.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__setT_unsigned_int_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__streampos.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__streamsize.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__string_view.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unique_ptrT_nifly__kd_matcher__kd_node_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unique_ptrT_nifly__NiAlphaProperty_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unique_ptrT_nifly__NiExtraData_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unique_ptrT_nifly__NiObject_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unique_ptrT_nifly__UnionBV_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unordered_mapT_unsigned_short_float_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unordered_mapT_unsigned_short_nifly__Vector3_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__unordered_setT_unsigned_int_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__BoneTranslation_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__BSGeometryMeshData__culldata_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__BSGeometryMeshData__meshlet_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__Matrix4_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkConvexShape_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkConvexShape_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkEntity_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkEntity_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkRigidBody_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkRigidBody_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkSerializable_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkSerializable_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkShape_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__bhkShape_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__BSAnimNotes_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__BSAnimNotes_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__BSAnimNote_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__BSAnimNote_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__BSMasterParticleSystem_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__BSMasterParticleSystem_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiAVObject_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiAVObject_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiControllerManager_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiControllerManager_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiControllerSequence_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiControllerSequence_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiDynamicEffect_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiDynamicEffect_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiExtraData_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiExtraData_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiNode_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiNode_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiObjectNET_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiObjectNET_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiObject_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiObject_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiParticleSystem_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiParticleSystem_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiProperty_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiProperty_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiPSysColliderManager_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiPSysColliderManager_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiPSysModifier_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiPSysModifier_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiSourceTexture_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiSourceTexture_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiTriStripsData_t_t__const_iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRefT_nifly__NiTriStripsData_t_t__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__NiBlockRef_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__UnkMaterialStruct_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__UnkWeakRefStruct_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_nifly__WeakReference_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_std__reference_wrapperT_std__string_t_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_std__unique_ptrT_nifly__NiObject_t_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_std__vectorT_nifly__BSGeometryMeshData__boneweight_t_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vectorT_std__vectorT_nifly__Triangle_t_t.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_std__vector__iterator.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_unsigned_char.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_unsigned_int.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SWIGTYPE_p_unsigned_short.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\SymmetryType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorAdditionalDataBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorAdditionalDataInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorbhkCMSDBigTris.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorbhkCMSDChunk.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorBoneLOD.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorBonePose.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorBSConnectPoint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorBSPackedAdditionalDataBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorBSTreadTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorConstraintData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorControllerLink.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorDecalVectorBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorFurniturePosition.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorMorphWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorNiAnimationKeyuchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorNiBlockRefArrayNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorNiStringRef.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorNiTextKey.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\syncVectorShaderTexDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TallGrassShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TargetColor.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TBC.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TexClampMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TexDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TexFilterMode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TexTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TexTransformType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TextureRenderData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TexType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\TileShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Triangle.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\UnionBV.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\UnkMaterialStruct.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\UnkWeakRefStruct.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Vector2.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vector2Dint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vector2Duchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vector2Duint16.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vector2DVector2.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Vector3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\Vector4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorAdditionalDataBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorAdditionalDataInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorbhkCMSDBigTris.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorbhkCMSDChunk.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorbhkCMSDMaterial.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorbhkCMSDTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBoneIndices.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBoneLOD.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBoneMatrix.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBonePose.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBoundingSphere.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBoundingVolume.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSConnectPoint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSGeometrySegmentData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSPackedAdditionalDataBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSPackedGeomData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSPackedGeomDataCombined.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSPackedGeomObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSSITSSegment.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSSITSSubSegment.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSSITSSubSegmentDataRecord.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSSkinBoneDataBoneData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSTextureArray.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSTreadTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorBSVertexData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorByteColor4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorColor4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorConstraintData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorControllerLink.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorDecalVectorBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorfloat.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorFurniturePosition.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorhalf.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorHavokFilter.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorhkSubPartData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorhkTriangleData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorhkTriangleNormalData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorint.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorInterpBlendItem.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorkd_query_result.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorLODRange.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorMatchGroup.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorMatrix3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorMatTransform.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorMipMapInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorMorph.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorMorphWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiAnimationKeyQuaternion.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockPtrArrayNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefbhkConvexShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefbhkEntity.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefbhkSerializable.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefbhkShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefBSAnimNote.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefBSAnimNotes.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiAVObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiControllerSequence.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiDynamicEffect.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiPSysModifier.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiSourceTexture.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiBlockRefNiTriStripsData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNifSegmentInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNifSubSegmentInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiNode.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiObject.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiShape.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiSkinDataBoneData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiString.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiStringExtraData.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiStringRef.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorNiStringRefPtr.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorPartitionBlock.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorPartitionInfo.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorShaderTexDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorshort.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorSkinWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorstring.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorTriangle.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectoruchar.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectoruint16.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectoruint32.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectoruint64.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorVector2.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorVector3.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorVector4.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\vectorVertexWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\VelocityType.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\VertexAttribute.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\VertexDesc.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\VertexFlags.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\VertexWeight.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\VolumetricFogShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\WaterShaderProperty.cs" />
+    <Compile Remove="external\niflyswig\niflysharp\WeakReference.cs" />
+    <Compile Remove="external\niflyswig\niflytest\FileRoundTrip.cs" />
+    <Compile Remove="external\niflyswig\niflytest\obj\Debug\net5.0\.NETCoreApp,Version=v5.0.AssemblyAttributes.cs" />
+    <Compile Remove="external\niflyswig\niflytest\obj\Debug\net5.0\nifly-test.AssemblyInfo.cs" />
+    <Compile Remove="external\niflyswig\niflytest\obj\Release\net5.0\.NETCoreApp,Version=v5.0.AssemblyAttributes.cs" />
+    <Compile Remove="external\niflyswig\niflytest\obj\Release\net5.0\nifly-test.AssemblyInfo.cs" />
+    <Compile Remove="external\niflyswig\niflytest\obj\Release\net8.0\.NETCoreApp,Version=v8.0.AssemblyAttributes.cs" />
+    <Compile Remove="external\niflyswig\niflytest\obj\Release\net8.0\nifly-test.AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.8">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.8%28x86 및 x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="References\BetterFolderBrowser.dll" />
-    <EmbeddedResource Include="References\ICSharpCode.SharpZipLib.dll" />
-    <EmbeddedResource Include="References\log4net.dll" />
-    <EmbeddedResource Include="References\Newtonsoft.Json.dll" />
-    <EmbeddedResource Include="References\System.Buffers.dll" />
-    <EmbeddedResource Include="References\System.Memory.dll" />
-    <EmbeddedResource Include="References\System.Numerics.Vectors.dll" />
-    <EmbeddedResource Include="References\System.Runtime.CompilerServices.Unsafe.dll" />
-    <EmbeddedResource Include="References\System.Threading.Tasks.Extensions.dll" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

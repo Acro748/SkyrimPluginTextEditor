@@ -1,44 +1,17 @@
-﻿using ICSharpCode.SharpZipLib.Core;
-using ICSharpCode.SharpZipLib.Zip;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
-using log4net.Core;
-using log4net.Plugin;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.Win32;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Security.Policy;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
-using System.Web.Security;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
-using System.Xml.Linq;
-using WK.Libraries.BetterFolderBrowserNS;
-using static SkyrimPluginTextEditor.PluginData;
-using static SkyrimPluginTextEditor.PluginStreamBase;
-using static System.Net.WebRequestMethods;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 #pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
 
@@ -78,6 +51,7 @@ namespace SkyrimPluginTextEditor
             LV_FragmentList_Update(true);
             CB_MasterPluginBefore_Update(true);
             LV_ConvertList_Update(true);
+            CB_MatchCase_Update();
 
             LV_ConvertList_Active(false);
             LV_PluginList_Active(false);
@@ -85,8 +59,8 @@ namespace SkyrimPluginTextEditor
             MI_Reset_Active(false);
             MI_Save_Active(false);
             MI_FileManager_Active(false);
+            MI_Macro_Active(false);
 
-            CB_MatchCase.IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase();
             SafetyMode = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode();
             MI_SafetyMode.IsChecked = SafetyMode;
         }
@@ -102,17 +76,20 @@ namespace SkyrimPluginTextEditor
         private List<DataEditField> dataEditFieldsDisable = new List<DataEditField>();
         private ConcurrentDictionary<UInt64, DataEditField> dataEditFieldsEdited = new ConcurrentDictionary<UInt64, DataEditField>();
         private FileManager fm = null;
-        private BetterFolderBrowser betterFolderBrowser = new BetterFolderBrowser() { Title = "Select plugin folders...", Multiselect = true };
-        bool SafetyMode = false;
+        private Setting setting = new Setting();
+        private OpenFolderDialog folderBrowser = new OpenFolderDialog() { Title = "Select plugin folders...", Multiselect = true };
+        private bool SafetyMode = false;
+        private MatchCase matchCase = new MatchCase() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase() };
+        private bool MacroMode = false;
 
         private void MI_OpenFolder_Click(object sender, RoutedEventArgs e)
         {
-            betterFolderBrowser.RootFolder = Config.GetSingleton.GetDefaultPath();
+            folderBrowser.InitialDirectory = Config.GetSingleton.GetDefaultPath();
 
-            if (betterFolderBrowser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (folderBrowser.ShowDialog() ?? false)
             {
                 selectedFolders.Clear();
-                selectedFolders = betterFolderBrowser.SelectedFolders.ToList();
+                selectedFolders = folderBrowser.FolderNames.ToList();
             }
             else
                 return;
@@ -311,6 +288,7 @@ namespace SkyrimPluginTextEditor
                 {
                     ProgressBarDone();
                     MI_OpenFolder_Active();
+                    MI_Macro_Active();
                 }
             });
 
@@ -342,6 +320,8 @@ namespace SkyrimPluginTextEditor
                             IsSelected = false,
                             FromRecoredsToolTip = item.RecordType,
                             FromRecordList = new List<string> { item.RecordType },
+                            IsEnable = true,
+                            Foreground = System.Windows.Media.Brushes.Black
                         });
                     }
                     dataCount++;
@@ -364,6 +344,7 @@ namespace SkyrimPluginTextEditor
                 { 
                     ProgressBarDone();
                     MI_OpenFolder_Active();
+                    MI_Macro_Active();
                 }
             });
 
@@ -405,6 +386,7 @@ namespace SkyrimPluginTextEditor
                 {
                     ProgressBarDone();
                     MI_OpenFolder_Active();
+                    MI_Macro_Active();
                 }
             });
 
@@ -453,6 +435,7 @@ namespace SkyrimPluginTextEditor
                 {
                     ProgressBarDone();
                     MI_OpenFolder_Active();
+                    MI_Macro_Active();
                 }
 
             });
@@ -684,14 +667,11 @@ namespace SkyrimPluginTextEditor
                 LV_ConvertList_Active(false);
                 string ReplaceSearch = TB_ReplaceSearch.Text;
                 string ReplaceResult = TB_ReplaceResult.Text;
-                bool MatchCase = false;
-                if ((bool)CB_MatchCase.IsChecked)
-                    MatchCase = true;
                 Parallel.ForEach(dataEditFields, data =>
                 {
                     if (data.IsChecked && data.TextAfter != null && data.TextAfter.Length > 0)
                     {
-                        data.TextAfter = Util.Replace(data.TextAfter, ReplaceSearch, ReplaceResult, MatchCase);
+                        data.TextAfter = Util.Replace(data.TextAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
                         data.TextAfterDisplay = MakeAltDataEditField(data);
                         dataEditFieldsEdited[data.Index] = data;
                     }
@@ -767,6 +747,7 @@ namespace SkyrimPluginTextEditor
                     toggleDatas.Add(toggleData);
                 }
                 InactiveListUpdate(toggleDatas, isChecked);
+                FragmentListUpdate();
             }
         }
         private void CB_Plugins_CheckUncheck(object sender, RoutedEventArgs e)
@@ -823,6 +804,7 @@ namespace SkyrimPluginTextEditor
                     FragmentType = "0000"
                 };
                 InactiveListUpdate(toggleData, data.IsChecked);
+                FragmentListUpdate();
             }
         }
 
@@ -845,8 +827,26 @@ namespace SkyrimPluginTextEditor
                 FragmentType = data.FragmentType
             };
             InactiveListUpdate(toggleData, data.IsChecked);
-
         }
+
+        private void FragmentListUpdate()
+        {
+            foreach (var item in fragmentList)
+            {
+                if (pluginList.FindIndex(x => x.IsChecked && item.FromRecordList.FindIndex(y => x.RecordType == y) != -1) != -1)
+                {
+                    item.Foreground = System.Windows.Media.Brushes.Black;
+                    item.IsEnable = true;
+                }
+                else
+                {
+                    item.Foreground = System.Windows.Media.Brushes.LightGray;
+                    item.IsEnable = false;
+                }
+            }
+            LV_FragmentList_Update();
+        }
+
         private void InactiveListUpdate(List<PluginToggleData> datas, bool IsChecked)
         {
             if (IsChecked)
@@ -967,6 +967,14 @@ namespace SkyrimPluginTextEditor
             }));
             Task.Delay(TimeSpan.FromTicks(1));
         }
+        private void CB_MatchCase_Update()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                CB_MatchCase.DataContext = matchCase;
+            }));
+            Task.Delay(TimeSpan.FromTicks(1));
+        }
         private void LV_PluginList_Active(bool Active = true)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -1036,8 +1044,9 @@ namespace SkyrimPluginTextEditor
 
         private void MI_Setting_Click(object sender, RoutedEventArgs e)
         {
-            Setting settingWindow = new Setting();
-            settingWindow.ShowDialog();
+            setting.ShowDialog();
+            if (setting.IsChangedEncoding() || setting.IsChangedStringLanguage())
+                SetPluginListView();
         }
         private void MI_Reset_Active(bool Active = true)
         {
@@ -1073,7 +1082,8 @@ namespace SkyrimPluginTextEditor
                 plugin.Value.ApplyEditableDatas();
                 plugin.Value.Write();
             });
-            System.Windows.MessageBox.Show("Save done!");
+            if (!MacroMode)
+                System.Windows.MessageBox.Show("Save done!");
             SetPluginListView();
         }
 
@@ -1084,12 +1094,19 @@ namespace SkyrimPluginTextEditor
             fm = new FileManager(selectedFolders);
             fm.Show();
         }
-
         private void MI_FileManager_Active(bool Active = true)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 MI_FileManager.IsEnabled = Active;
+            }));
+        }
+
+        private void MI_Macro_Active(bool Active = true)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                MI_Macro.IsEnabled = Active;
             }));
         }
 
@@ -1135,11 +1152,7 @@ namespace SkyrimPluginTextEditor
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             Config.GetSingleton.SetSkyrimPluginEditor_Size(this.Height, this.Width);
-            if (fm == null)
-                return;
-            if (!fm.IsLoaded)
-                return;
-            fm.Close();
+            Application.Current.Shutdown();
         }
 
         private void LV_Check_OnClick(object sender, RoutedEventArgs e)
@@ -1373,18 +1386,347 @@ namespace SkyrimPluginTextEditor
             SafetyMode = mi.IsChecked;
             Config.GetSingleton.SetSkyrimPluginEditor_SafetyMode(SafetyMode);
         }
+
+        private void MI_Macro_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Multiselect = false;
+            openFileDialog.Title = "Open macro...";
+            openFileDialog.Filter = "macro file (*.spt, *.txt)|*.spt;*.txt";
+
+            if (!(openFileDialog.ShowDialog() ?? false))
+                return;
+            var file = openFileDialog.FileName;
+            bool isTextEdit = false;
+            bool isFileEdit = false;
+            bool isSave = false;
+
+            LV_PluginList_Active(false);
+            LV_FragmentList_Active(false);
+            CB_MasterPluginBefore_Active(false);
+            BT_Apply_Active(false);
+            LV_ConvertList_Active(false);
+            MI_OpenFolder_Active(false);
+            MI_Reset_Active(false);
+            MI_FileManager_Active(false);
+            MacroMode = true;
+
+            foreach (var line in File.ReadLines(file))
+            {
+                if (line.Length == 0)
+                    continue;
+
+                if (line == "TEXTEDIT")
+                    isTextEdit = true;
+                else if (line == "FILEEDIT")
+                {
+                    isTextEdit = false;
+                    isFileEdit = true;
+                }
+
+                if (!isTextEdit)
+                    continue;
+
+                var macroline = line;
+                if (macroline.Contains("#"))
+                {
+                    if (macroline.StartsWith("#"))
+                        continue;
+                    var splitline = macroline.Split('#');
+                    macroline = splitline[0];
+                }
+
+                var macro = macroline.Split('|');
+                if (macro.Length < 1)
+                    continue;
+
+                var m1 = macro[0];
+                if (m1 == "FILTER")
+                {
+                    if (macro.Length < 3)
+                        continue;
+                    var m2 = macro[1];
+                    var m3 = macro[2];
+                    if (m2 == "PLUGINS")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
+                            {
+                                foreach (var item in pluginList)
+                                {
+                                    item.IsChecked = true;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in pluginList)
+                                {
+                                    if (item.PluginName == m4 || item.RecordType == m4)
+                                    {
+                                        item.IsChecked = true;
+                                    }
+                                }
+                            }
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
+                            {
+                                foreach (var item in pluginList)
+                                {
+                                    item.IsChecked = false;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in pluginList)
+                                {
+                                    if (item.PluginName == m4 || item.RecordType == m4)
+                                    {
+                                        item.IsChecked = false;
+                                    }
+                                }
+                            }
+                        }
+                        else if (m3 == "INVERT")
+                        {
+                            foreach (var item in pluginList)
+                            {
+                                item.IsChecked = !item.IsChecked;
+                            }
+                        }
+                    }
+                    else if (m2 == "FRAGMENTS")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
+                            {
+                                foreach (var item in fragmentList)
+                                {
+                                    item.IsChecked = true;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in fragmentList)
+                                {
+                                    if (item.FragmentType == m4)
+                                    {
+                                        item.IsChecked = true;
+                                    }
+                                }
+                            }
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
+                            {
+                                foreach (var item in fragmentList)
+                                {
+                                    item.IsChecked = false;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in fragmentList)
+                                {
+                                    if (item.FragmentType == m4)
+                                    {
+                                        item.IsChecked = false;
+                                    }
+                                }
+                            }
+                        }
+                        else if (m3 == "INVERT")
+                        {
+                            foreach (var item in fragmentList)
+                            {
+                                item.IsChecked = !item.IsChecked;
+                            }
+                        }
+                    }
+                    else if (m2 == "CONVERT")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
+                            {
+                                Parallel.ForEach(dataEditFields, item =>
+                                {
+                                    item.IsChecked = true;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(dataEditFields, item =>
+                                {
+                                    if (item.TextAfter.Contains(m4))
+                                    {
+                                        item.IsChecked = true;
+                                    }
+                                });
+                            }
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
+                            {
+                                Parallel.ForEach(dataEditFields, item =>
+                                {
+                                    item.IsChecked = false;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(dataEditFields, item =>
+                                {
+                                    if (item.TextAfter.Contains(m4))
+                                    {
+                                        item.IsChecked = false;
+                                    }
+                                });
+                            }
+                        }
+                        else if (m3 == "INVERT")
+                        {
+                            Parallel.ForEach(dataEditFields, item =>
+                            {
+                                item.IsChecked = !item.IsChecked;
+                            });
+                        }
+                    }
+                    else if (m2 == "MATCHCASE")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            matchCase.IsChecked = true;
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            matchCase.IsChecked = false;
+                        }
+                    }
+                }
+                else if (m1 == "APPLY")
+                {
+                    if (macro.Length < 3)
+                        continue;
+                    var m2 = macro[1];
+                    var m3 = macro[2];
+                    if (m2 == "MASTER")
+                    {
+                        if (macro.Length < 4)
+                            continue;
+                        var m4 = macro[3];
+                        var index = masterPluginList.FindIndex(x => x.MasterPluginName == m3);
+                        if (index != -1)
+                        {
+                            masterPluginList[index].MasterPluginName = m4;
+                        }
+                    }
+                    else if (m2 == "ADDPREFIX")
+                    {
+                        Parallel.ForEach(dataEditFields, item =>
+                        {
+                            if (item.IsChecked)
+                            {
+                                item.TextAfter = m3 + item.TextAfter;
+                                item.TextAfterDisplay = MakeAltDataEditField(item);
+                                dataEditFieldsEdited.AddOrUpdate(item.Index, item, (key, oldvalue) => item);
+                            }
+                        });
+                    }
+                    else if (m2 == "ADDSUFFIX")
+                    {
+                        Parallel.ForEach(dataEditFields, item =>
+                        {
+                            if (item.IsChecked)
+                            {
+                                item.TextAfter = item.TextAfter + m3;
+                                item.TextAfterDisplay = MakeAltDataEditField(item);
+                                dataEditFieldsEdited.AddOrUpdate(item.Index, item, (key, oldvalue) => item);
+                            }
+                        });
+                    }
+                    else if (m2 == "REPLACE")
+                    {
+                        var m4 = "";
+                        if (macro.Length > 3)
+                            m4 = macro[3];
+                        Parallel.ForEach(dataEditFields, item =>
+                        {
+                            if (item.IsChecked)
+                            {
+                                item.TextAfter = Util.Replace(item.TextAfter, m3, m4, matchCase.IsChecked);
+                                item.TextAfterDisplay = MakeAltDataEditField(item);
+                                dataEditFieldsEdited[item.Index] = item;
+                            }
+                        });
+                    }
+                }
+                else if (m1 == "SAVE")
+                {
+                    MI_Save_Click(sender, e);
+                    isSave = true;
+                }
+                Task.Delay(100);
+            }
+            if (!isSave)
+            {
+                LV_PluginList_Update();
+                LV_FragmentList_Update();
+                LV_ConvertList_Update();
+            }
+            LV_PluginList_Active();
+            LV_FragmentList_Active();
+            CB_MasterPluginBefore_Active();
+            BT_Apply_Update();
+            LV_ConvertList_Active();
+            MI_OpenFolder_Active();
+            MI_Reset_Active();
+            MI_FileManager_Active();
+
+            if (isFileEdit)
+            {
+                if (fm != null && fm.IsLoaded)
+                    return;
+                fm = new FileManager(selectedFolders);
+                fm.Show();
+                while(!fm.IsInitialized())
+                {
+                    Task.Delay(100);
+                }
+                fm.Macro_Load(sender, e, file, true);
+            }
+
+            MacroMode = false;
+            System.Windows.MessageBox.Show("Macro loaded");
+        }
     }
 
-    public class PluginListData : INotifyPropertyChanged
+    public class MatchCase : INotifyPropertyChanged
     {
         private bool _IsChecked;
-        private bool _IsSelected;
-
-        public string PluginName { get; set; }
-        public string RecordType { get; set; }
-
-        public string PluginPath { get; set; }
-
         public bool IsChecked
         {
             get { return _IsChecked; }
@@ -1395,6 +1737,35 @@ namespace SkyrimPluginTextEditor
             }
         }
 
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyname)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyname));
+            }
+        }
+    }
+    public class PluginListData : INotifyPropertyChanged
+    {
+        public string PluginName { get; set; }
+        public string RecordType { get; set; }
+
+        public string PluginPath { get; set; }
+
+        private bool _IsChecked;
+        public bool IsChecked
+        {
+            get { return _IsChecked; }
+            set
+            {
+                _IsChecked = value;
+                OnPropertyChanged("IsChecked");
+            }
+        }
+
+        private bool _IsSelected;
         public bool IsSelected
         {
             get { return _IsSelected; }
@@ -1450,6 +1821,28 @@ namespace SkyrimPluginTextEditor
             {
                 _IsSelected = value;
                 OnPropertyChanged("IsSelected");
+            }
+        }
+
+        private bool _IsEnable;
+        public bool IsEnable
+        {
+            get { return _IsEnable; }
+            set
+            {
+                _IsEnable = value;
+                OnPropertyChanged("IsEnable");
+            }
+        }
+
+        private System.Windows.Media.Brush _Foreground;
+        public System.Windows.Media.Brush Foreground
+        {
+            get { return _Foreground; }
+            set
+            {
+                _Foreground = value;
+                OnPropertyChanged("Foreground");
             }
         }
 

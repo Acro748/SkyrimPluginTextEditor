@@ -14,11 +14,13 @@ namespace SkyrimPluginTextEditor
     /// </summary>
     public partial class App : Application
     {
+        public static readonly string Version = "v1.2.0";
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             AssemblyResolve();
             Config.GetSingleton.ConfigRead();
             MainWindow newWindow = new MainWindow();
+            newWindow.Title += " " + Version;
             newWindow.Show();
         }
         public void AssemblyResolve()

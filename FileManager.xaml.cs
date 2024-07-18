@@ -1,25 +1,17 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Windows.Threading;
-using WK.Libraries.BetterFolderBrowserNS;
-using static SkyrimPluginTextEditor.MainWindow;
 
 namespace SkyrimPluginTextEditor
 {
@@ -33,8 +25,13 @@ namespace SkyrimPluginTextEditor
         private List<MoveFileSet> nonSkyrimFiles = new List<MoveFileSet>();
         private List<MoveFileSet> filesDisable = new List<MoveFileSet>();
         private ConcurrentDictionary<string, MoveFileSet> filesEdited = new ConcurrentDictionary<string, MoveFileSet>();
-        List<Extensions> extensionList = new List<Extensions>();
-        bool isContentEdited = false;
+        private List<Extensions> extensionList = new List<Extensions>();
+        private bool isContentEdited = false;
+        private MatchCase matchCase = new MatchCase() { IsChecked = Config.GetSingleton.GetFileManager_MatchCase() };
+        private bool initialDone = false;
+        private FileContent fileContent = new FileContent() { IsChecked = Config.GetSingleton.GetFileManager_FileContent() };
+        private NonSkyrimFile nonSkyrimFile = new NonSkyrimFile() { IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile() };
+        private bool MacroMode = false;
 
         public FileManager(List<string> folders)
         {
@@ -47,27 +44,32 @@ namespace SkyrimPluginTextEditor
             LV_ExtensionList_Update(true);
             MI_Reset_Active(true);
             MI_Save_Active(false);
+            MI_Macro_Active(false);
             GetFiles();
 
-            CB_MatchCase.IsChecked = Config.GetSingleton.GetFileManager_MatchCase();
             MI_FileOverwrite.IsChecked = Config.GetSingleton.GetFileManager_FileOverwrite();
             MI_ClearSubFolder.IsChecked = Config.GetSingleton.GetFileManager_ClearEmptySubFolder();
             MI_NonSkyrimFile.IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile();
+
+            MI_Macro_Active(true);
+            initialDone = true;
         }
+
+        public bool IsInitialized() { return initialDone; }
 
         private void Search_Folder()
         {
-            var betterFolderBrowser = new BetterFolderBrowser();
+            var folderBrowser = new OpenFolderDialog();
 
             //browser initial
-            betterFolderBrowser.Title = "Select plugin folders...";
-            betterFolderBrowser.RootFolder = Config.GetSingleton.GetDefaultPath();
-            betterFolderBrowser.Multiselect = true;
+            folderBrowser.Title = "Select plugin folders...";
+            folderBrowser.DefaultDirectory = Config.GetSingleton.GetDefaultPath();
+            folderBrowser.Multiselect = true;
 
-            if (betterFolderBrowser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (folderBrowser.ShowDialog() ?? false)
             {
                 selectedFolders.Clear();
-                selectedFolders = betterFolderBrowser.SelectedFolders.ToList();
+                selectedFolders = folderBrowser.FolderNames.ToList();
             }
             else
             {
@@ -112,7 +114,7 @@ namespace SkyrimPluginTextEditor
                 newFile.IsContainsContent = true;
             }
 
-            if (CB_FileContent_IsChecked() && newFile.IsContainsContent)
+            if (fileContent.IsChecked && newFile.IsContainsContent)
             {
                 newFile.TooltipBefore = newFile.FileContentBefore;
                 newFile.TooltipAfter = newFile.FileContentAfter;
@@ -212,16 +214,6 @@ namespace SkyrimPluginTextEditor
             });
         }
 
-        private bool CB_FileContent_IsChecked()
-        {
-            bool isChecked = false;
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                isChecked = CB_FileContent.IsChecked ?? false;
-            }));
-            return isChecked;
-        }
-
         private async void BT_Apply_Click(object sender, RoutedEventArgs e)
         {
             BT_Apply_Active(false);
@@ -230,22 +222,16 @@ namespace SkyrimPluginTextEditor
                 LV_FileList_Active(false);
                 string ReplaceSearch = TB_ReplaceSearch.Text;
                 string ReplaceResult = TB_ReplaceResult.Text;
-                bool MatchCase = false;
-                if (CB_MatchCase.IsChecked == true)
-                    MatchCase = true;
-                bool FileContent = false;
-                if (CB_FileContent.IsChecked  ==  true)
-                    FileContent = true;
-                isContentEdited = isContentEdited ? isContentEdited : FileContent;
+                isContentEdited = isContentEdited ? isContentEdited : fileContent.IsChecked;
                 Parallel.ForEach(files, file =>
                 {
                     if (file.IsChecked)
                     {
-                        file.FileAfter = Util.Replace(file.FileAfter, ReplaceSearch, ReplaceResult, MatchCase);
+                        file.FileAfter = Util.Replace(file.FileAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
                         file.DisplayAfter = file.FileAfter;
-                        if (FileContent && file.IsContainsContent)
+                        if (fileContent.IsChecked && file.IsContainsContent)
                         {
-                            file.FileContentAfter = Util.Replace(file.FileContentAfter, ReplaceSearch, ReplaceResult, MatchCase);
+                            file.FileContentAfter = Util.Replace(file.FileContentAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
                             file.TooltipAfter = file.FileContentAfter;
                             file.IsContentEdited = true;
                         }
@@ -380,6 +366,22 @@ namespace SkyrimPluginTextEditor
             GVC_Extensions.Width = GVC_Extensions.Width * Ratio;
         }
 
+        private void CB_FileContent_Update()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                CB_FileContent.DataContext = fileContent;
+            }));
+            Task.Delay(TimeSpan.FromTicks(1));
+        }
+        private void MI_NonSkyrimFile_Update()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                MI_NonSkyrimFile.DataContext = nonSkyrimFile;
+            }));
+            Task.Delay(TimeSpan.FromTicks(1));
+        }
         private void BT_Apply_Active(bool Active = true)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -479,6 +481,13 @@ namespace SkyrimPluginTextEditor
                 MI_Save.IsEnabled = Active;
             }));
         }
+        private void MI_Macro_Active(bool Active = true)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                MI_Macro.IsEnabled = Active;
+            }));
+        }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
         {
             bool fileOverwrite = MI_FileOverwrite.IsChecked;
@@ -512,7 +521,8 @@ namespace SkyrimPluginTextEditor
                     Util.ClearSubDirectory(folder);
                 });
             }
-            System.Windows.MessageBox.Show("Move/Edit done!");
+            if (!MacroMode)
+                System.Windows.MessageBox.Show("Move/Edit done!");
             GetFiles();
         }
 
@@ -875,6 +885,249 @@ namespace SkyrimPluginTextEditor
         {
             Config.GetSingleton.SetFileManager_Size(this.Height, this.Width);
         }
+
+        private void MI_Macro_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Multiselect = false;
+            openFileDialog.Title = "Open macro...";
+            openFileDialog.Filter = "macro file (*.spt, *.txt) | *.spt, *.txt | All file (*.*) | *.*";
+
+            if (!(openFileDialog.ShowDialog() ?? false))
+                return;
+            var file = openFileDialog.FileName;
+            Macro_Load(sender, e, file, false);
+        }
+
+        public void Macro_Load(object sender, RoutedEventArgs e, string file, bool endClose)
+        {
+            bool isFileEdit = false;
+            bool isSave = false;
+
+            BT_Apply_Active(false);
+            LV_ExtensionList_Active(false);
+            LV_FileList_Active(false);
+            MI_Reset_Active(false);
+            MI_Save_Active(false);
+            MacroMode = true;
+
+            foreach (var line in File.ReadLines(file))
+            {
+                if (line == "TEXTEDIT")
+                    isFileEdit = false;
+                else if (line == "FILEEDIT")
+                    isFileEdit = true;
+
+                if (!isFileEdit)
+                    continue;
+
+                var macroline = line;
+                if (macroline.Contains("#"))
+                {
+                    if (macroline.StartsWith("#"))
+                        continue;
+                    var splitline = macroline.Split('#');
+                    macroline = splitline[0];
+                }
+
+                var macro = macroline.Split('|');
+                if (macro.Length < 1)
+                    continue;
+
+                var m1 = macro[0];
+                if (m1 == "FILTER")
+                {
+                    if (macro.Length < 3)
+                        continue;
+                    var m2 = macro[1];
+                    var m3 = macro[2];
+                    if (m2 == "EXTENSIONS")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            foreach (var item in extensionList)
+                            {
+                                item.IsChecked = true;
+                            }
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            foreach (var item in extensionList)
+                            {
+                                item.IsChecked = false;
+                            }
+                        }
+                        else if (m3 == "INVERT")
+                        {
+                            foreach (var item in extensionList)
+                            {
+                                item.IsChecked = !item.IsChecked;
+                            }
+                        }
+                    }
+                    else if (m2 == "FILELIST")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            Parallel.ForEach(files, item =>
+                            {
+                                item.IsChecked = true;
+                            });
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            Parallel.ForEach(files, item =>
+                            {
+                                item.IsChecked = false;
+                            });
+                        }
+                        else if (m3 == "INVERT")
+                        {
+                            Parallel.ForEach(files, item =>
+                            {
+                                item.IsChecked = !item.IsChecked;
+                            });
+                        }
+                    }
+                    else if (m2 == "MATCHCASE")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            matchCase.IsChecked = true;
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            matchCase.IsChecked = false;
+                        }
+                    }
+                    else if (m2 == "FILECONTENT")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            fileContent.IsChecked = true;
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            fileContent.IsChecked = false;
+                        }
+                    }
+                    else if (m2 == "NONSKYRIM")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            fileContent.IsChecked = true;
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            fileContent.IsChecked = false;
+                        }
+                    }
+                }
+                else if (m1 == "APPLY")
+                {
+                    if (macro.Length < 3)
+                        continue;
+                    var m2 = macro[1];
+                    var m3 = macro[2];
+                    if (m2 == "REPLACE")
+                    {
+                        var m4 = "";
+                        if (macro.Length > 3)
+                            m4 = macro[3];
+                        isContentEdited = isContentEdited ? isContentEdited : fileContent.IsChecked;
+                        Parallel.ForEach(files, item =>
+                        {
+                            if (item.IsChecked)
+                            {
+                                item.FileAfter = Util.Replace(item.FileAfter, m3, m4, matchCase.IsChecked);
+                                item.DisplayAfter = item.FileAfter;
+                                if (fileContent.IsChecked && item.IsContainsContent)
+                                {
+                                    item.FileContentAfter = Util.Replace(item.FileContentAfter, m3, m4, matchCase.IsChecked);
+                                    item.TooltipAfter = item.FileContentAfter;
+                                    item.IsContentEdited = true;
+                                }
+                                filesEdited[item.FileBefore] = item;
+                            }
+                        });
+                    }
+                }
+                else if (m1 == "SAVE")
+                {
+                    MI_Save_Click(sender, e);
+                    isSave = true;
+                }
+
+                Task.Delay(100);
+            }
+
+            BT_Apply_Update();
+            LV_ExtensionList_Active();
+            LV_FileList_Active();
+            MI_Reset_Active();
+            MI_Save_Active();
+
+            MacroMode = false;
+
+            if (endClose)
+                this.Close();
+            else
+            {
+                if (!isSave)
+                {
+                    LV_ExtensionList_Update();
+                    LV_FileList_Sort();
+                    LV_FileList_Update();
+                }
+                System.Windows.MessageBox.Show("Macro loaded");
+            }
+        }
+    }
+    public class FileContent : INotifyPropertyChanged
+    {
+        private bool _IsChecked;
+        public bool IsChecked
+        {
+            get { return _IsChecked; }
+            set
+            {
+                _IsChecked = value;
+                OnPropertyChanged("IsChecked");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyname)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyname));
+            }
+        }
+    }
+    public class NonSkyrimFile : INotifyPropertyChanged
+    {
+        private bool _IsChecked;
+        public bool IsChecked
+        {
+            get { return _IsChecked; }
+            set
+            {
+                _IsChecked = value;
+                OnPropertyChanged("IsChecked");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyname)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyname));
+            }
+        }
     }
 
     public class MoveFileSet : INotifyPropertyChanged
@@ -982,4 +1235,6 @@ namespace SkyrimPluginTextEditor
             }
         }
     }
+
+
 }
