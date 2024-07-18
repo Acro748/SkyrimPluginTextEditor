@@ -286,7 +286,7 @@ namespace SkyrimPluginTextEditor
             };
             public readonly List<string> EditableFileContentList = new List<string>
             {
-                ".ini", ".ec", ".txt", ".xml", ".jslot", ".psc"
+                ".ini", ".ec", ".txt", ".xml", ".jslot", ".psc", ".osp"
             };
         }
         private TypeDictionary typeDictionary = new TypeDictionary();
