@@ -146,6 +146,7 @@ namespace SkyrimPluginTextEditor
             nonSkyrimFiles.Clear();
             filesEdited.Clear();
 
+            ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(selectedFolders, folder =>
             {
                 if (Directory.Exists(folder))
@@ -156,7 +157,13 @@ namespace SkyrimPluginTextEditor
                         double fileStep = step / filesInDirectory.Length;
                         Parallel.ForEach(filesInDirectory, path =>
                         {
-                            GetFile(path, tmpLock);
+                            if (!Util.CanRead(path))
+                            {
+                                Logger.Log.Error("Unable to access : " + path);
+                                failFiles.Add(path);
+                            }
+                            else
+                                GetFile(path, tmpLock);
                             ProgressBarStep(fileStep);
                         });
                     }
@@ -166,6 +173,20 @@ namespace SkyrimPluginTextEditor
             });
             LV_FileList_Update();
             LV_ExtensionList_Update();
+
+            if (failFiles.Count > 0)
+            {
+                string wrongFiles = "";
+                bool first = true;
+                foreach (var file in failFiles)
+                {
+                    if (!first)
+                        wrongFiles += "\n";
+                    wrongFiles += file;
+                    first = false;
+                }
+                System.Windows.MessageBox.Show(wrongFiles, "ERROR : Failed to access file!");
+            }
 
             LV_FileList_Sort();
             extensionList.Sort((x, y) => { return x.FileExtension.CompareTo(y.FileExtension); });
@@ -502,29 +523,52 @@ namespace SkyrimPluginTextEditor
         }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
         {
+            ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(filesEdited, file =>
             {
                 string sourceFilePath = file.Value.FileBasePath + file.Value.FileBefore;
                 string targetFilePath = file.Value.FileBasePath + file.Value.FileAfter;
-                if (isContentEdited && file.Value.IsContainsContent)
+
+                if (!Util.CanRead(sourceFilePath) || !Util.CanWrite(targetFilePath))
                 {
-                    File.WriteAllText(sourceFilePath, file.Value.FileContentAfter, file.Value.FileContentEncoding);
+                    failFiles.Add(sourceFilePath);
+                    Logger.Log.Fatal("Unable to move the file : " + sourceFilePath + " => " + targetFilePath);
                 }
-                if (sourceFilePath.ToLower() == targetFilePath.ToLower())
-                    return; //don't need move file
-                if (File.Exists(targetFilePath))
+                else
                 {
-                    if (fileOverwrite.IsChecked)
+                    if (isContentEdited && file.Value.IsContainsContent)
                     {
-                        System.IO.File.Delete(targetFilePath);
+                        File.WriteAllText(sourceFilePath, file.Value.FileContentAfter, file.Value.FileContentEncoding);
+                    }
+                    if (sourceFilePath.ToLower() == targetFilePath.ToLower())
+                        return; //don't need move file
+                    if (File.Exists(targetFilePath))
+                    {
+                        if (fileOverwrite.IsChecked)
+                        {
+                            System.IO.File.Delete(targetFilePath);
+                        }
+                    }
+                    if (!File.Exists(targetFilePath))
+                    {
+                        System.IO.Directory.CreateDirectory(Util.GetDirectoryPath(targetFilePath));
+                        System.IO.File.Move(sourceFilePath, targetFilePath);
                     }
                 }
-                if (!File.Exists(targetFilePath))
-                {
-                    System.IO.Directory.CreateDirectory(Util.GetDirectoryPath(targetFilePath));
-                    System.IO.File.Move(sourceFilePath, targetFilePath);
-                }
             });
+            if (failFiles.Count > 0)
+            {
+                bool first = true;
+                string failFileList = "";
+                foreach (var item in failFiles)
+                {
+                    if (!first)
+                        failFileList += "\n";
+                    failFileList += item;
+                    first = false;
+                }
+                System.Windows.MessageBox.Show(failFileList, "ERROR : Unable to move the file!");
+            }
             if (clearSubFolder.IsChecked)
             {
                 Parallel.ForEach(selectedFolders, folder =>

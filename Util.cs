@@ -6,7 +6,6 @@ using System.Windows;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using System.IO;
-using System.Windows.Forms.Design;
 using System.Text;
 
 namespace SkyrimPluginTextEditor
@@ -15,6 +14,8 @@ namespace SkyrimPluginTextEditor
     {
         static public bool IsPluginFIle(string file)
         {
+            if (IsValidPath(file) != '0')
+                return false;
             string lowFileName = file.ToLower();
             return lowFileName.EndsWith(".esp") || lowFileName.EndsWith(".esm") || lowFileName.EndsWith(".esl");
         }
@@ -173,6 +174,40 @@ namespace SkyrimPluginTextEditor
                 encoding = reader.CurrentEncoding;
             }
             return File.ReadAllText(file, encoding);
+        }
+
+        static public bool CanRead(string file)
+        {
+            return CanAccess(file, FileAccess.Read) == 0;
+        }
+        static public bool CanWrite(string file)
+        {
+            return CanAccess(file, FileAccess.Write) != -1;
+        }
+        static public int CanAccess(string file, FileAccess access) // 0 = good, -1 faild, -2 not exist
+        {
+            if (!File.Exists(file))
+                return -2;
+            try
+            {
+                using (FileStream stream = new FileStream(file, FileMode.Open, access))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                return -1;
+            }
+
+            return 0;
+        }
+
+        static public string GetStringWithNullEnd(string str)
+        {
+            if (!str.EndsWith(char.MinValue))
+                str += char.MinValue;
+            return str;
         }
     }
 }

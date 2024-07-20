@@ -1,4 +1,5 @@
-﻿using nifly;
+﻿using log4net.Plugin;
+using nifly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -112,11 +113,10 @@ namespace SkyrimPluginTextEditor
                 Logger.Log.Info("reading " + mesh + " file...");
                 if (!LoadNifFile(newNifDatas, mesh))
                 {
-                    Logger.Log.Error("Failed to read " + mesh + " file");
+                    Logger.Log.Error("Unable to read : " + mesh);
                     failFiles.Add(mesh);
                 }
                 ProgressBarStep(step);
-                LV_NifDataList_Update();
             });
             ConcurrentBag<NifData> newNifDatas_Facegen = new ConcurrentBag<NifData>();
             Parallel.ForEach(newNifDatas, data =>
@@ -139,7 +139,7 @@ namespace SkyrimPluginTextEditor
                     wrongFiles += file;
                     first = false;
                 }
-                System.Windows.MessageBox.Show(wrongFiles, "Failed to read files");
+                System.Windows.MessageBox.Show(wrongFiles, "ERROR : Failed to read files");
             }
             SortingNifData();
             ProgressBarStep(mainStep);
@@ -155,6 +155,9 @@ namespace SkyrimPluginTextEditor
         NifLoadOptions loadOptions = new NifLoadOptions() { isTerrain = false };
         private bool LoadNifFile(ConcurrentBag<NifData> newNifDatas, string path)
         {
+            if (!Util.CanRead(path))
+                return false;
+
             NifFile nifFile = new NifFile(true);
             if (nifFile.Load(path, loadOptions) != 0)
                 return false;
@@ -255,6 +258,8 @@ namespace SkyrimPluginTextEditor
             foreach (var extra in obj.extraDataRefs.GetRefs())
             {
                 NiExtraData extraData = nifFile.GetHeader().GetBlockById(extra.index) as NiExtraData;
+                if (extraData == null)
+                    continue;
 
                 NifData nifData = new NifData() { IsChecked = true, IsSelected = false };
                 nifData.nifFile = nifFile;
@@ -271,22 +276,22 @@ namespace SkyrimPluginTextEditor
                 newNifDatas.Add(nifData);
 
                 NiStringExtraData stringExtraData = extraData as NiStringExtraData;
-                if (stringExtraData != null)
-                {
-                    NifData nifDataAlt = new NifData() { IsChecked = true, IsSelected = false };
-                    nifDataAlt.nifFile = nifFile;
-                    nifDataAlt.path = path;
-                    nifDataAlt.obj = stringExtraData;
-                    nifDataAlt.blockName = stringExtraData.GetBlockName();
-                    nifDataAlt.stringType = _StringType.ExtraData;
-                    nifDataAlt.strBefore = stringExtraData.stringData.get();
-                    nifDataAlt.strAfter = nifDataAlt.strBefore;
-                    nifDataAlt.strBeforeDisplay = MakeDisplayName(nifDataAlt);
-                    nifDataAlt.strAfterDisplay = nifDataAlt.strBeforeDisplay;
-                    nifDataAlt.ToolTip = nifDataAlt.path;
-                    nifDataAlt.isFacegenMesh = Util.IsFacegenMesh(nifDataAlt.path);
-                    newNifDatas.Add(nifDataAlt);
-                }
+                if (stringExtraData == null)
+                    continue;
+
+                NifData nifDataAlt = new NifData() { IsChecked = true, IsSelected = false };
+                nifDataAlt.nifFile = nifFile;
+                nifDataAlt.path = path;
+                nifDataAlt.obj = stringExtraData;
+                nifDataAlt.blockName = stringExtraData.GetBlockName();
+                nifDataAlt.stringType = _StringType.ExtraData;
+                nifDataAlt.strBefore = stringExtraData.stringData.get();
+                nifDataAlt.strAfter = nifDataAlt.strBefore;
+                nifDataAlt.strBeforeDisplay = MakeDisplayName(nifDataAlt);
+                nifDataAlt.strAfterDisplay = nifDataAlt.strBeforeDisplay;
+                nifDataAlt.ToolTip = nifDataAlt.path;
+                nifDataAlt.isFacegenMesh = Util.IsFacegenMesh(nifDataAlt.path);
+                newNifDatas.Add(nifDataAlt);
                 //NiStringsExtraData stringsExtraData = extraData as NiStringsExtraData;
             }
         }
@@ -449,15 +454,34 @@ namespace SkyrimPluginTextEditor
         }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
         {
+            ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(editedNifDatas, nif =>
             {
-                if (nif.Value.IsChecked)
+                if (!Util.CanWrite(nif.Value.path))
+                {
+                    failFiles.Add(nif.Value.path);
+                    Logger.Log.Fatal("Unable to access the file : " + nif.Value.path);
+                }
+                else
                 {
                     if (fileBackup.IsChecked)
                         NifBackup(nif.Value.path);
                     nif.Value.nifFile.Save(nif.Value.path);
                 }
             });
+            if (failFiles.Count > 0)
+            {
+                bool first = true;
+                string failFileList = "";
+                foreach (var item in failFiles)
+                {
+                    if (!first)
+                        failFileList += "\n";
+                    failFileList += item;
+                    first = false;
+                }
+                System.Windows.MessageBox.Show(failFileList, "ERROR : Unable to move the file!");
+            }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");
             LoadNifFiles();
@@ -596,9 +620,12 @@ namespace SkyrimPluginTextEditor
                 {
                     if (IsValidPath == '0' || data.textureIndex == -1)
                     {
+                        string strAftertemp = data.strAfter;
                         data.strAfter = Util.Replace(data.strAfter, search, result, matchCase.IsChecked);
                         data.strAfterDisplay = MakeDisplayName(data);
-                        editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
+
+                        if (strAftertemp != data.strAfter)
+                            editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
                         ApplyNifFile(data);
                     }
                     else

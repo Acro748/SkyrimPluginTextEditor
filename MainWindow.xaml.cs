@@ -27,7 +27,7 @@ namespace SkyrimPluginTextEditor
     {
         private List<string> selectedFolders = new List<string>();
         public List<string> GetSelectedFolders() { return selectedFolders; }
-        private Dictionary<string, PluginManager> pluginDatas = new Dictionary<string, PluginManager>(); //fullpath, plugindata
+        private Dictionary<string, PluginFile> pluginDatas = new Dictionary<string, PluginFile>(); //fullpath, plugindata
         private List<PluginListData> pluginList = new List<PluginListData>();
         private List<FragmentTypeData> fragmentList = new List<FragmentTypeData>();
         private List<PluginToggleData> inactiveList = new List<PluginToggleData>(); //if there is a data then set invisible it
@@ -134,7 +134,7 @@ namespace SkyrimPluginTextEditor
             string fileName = System.IO.Path.GetFileName(path);
             if (Util.IsPluginFIle(fileName))
             {
-                PluginManager pm = new PluginManager(path);
+                PluginFile pm = new PluginFile(path);
                 PluginStreamBase._ErrorCode errorCode = pm.Read();
                 lock (tmpLock)
                 {
@@ -192,7 +192,7 @@ namespace SkyrimPluginTextEditor
                         Parallel.ForEach(filesInDirectory, path =>
                         {
                             PluginStreamBase._ErrorCode errorCode = GetFile(path, fileLock);
-                            if (errorCode < 0 && -20 < (Int16)errorCode)
+                            if (errorCode < 0 && -20 < (int)errorCode)
                             {
                                 string fileName = System.IO.Path.GetFileName(path);
                                 lock (fileLock)
@@ -200,6 +200,7 @@ namespace SkyrimPluginTextEditor
                                     wrongPlugins.Add(fileName, errorCode);
                                 }
                             }
+
                             ProgressBarStep(fileStep);
                         });
                     }
@@ -215,10 +216,10 @@ namespace SkyrimPluginTextEditor
             ConcurrentDictionary<string, FragmentTypeData> newFragmentList = new ConcurrentDictionary<string, FragmentTypeData>();
             masterPluginList.Add(new MasterPluginField() { MasterPluginName = "None", MasterPluginNameOrig = "None" });
             ConcurrentDictionary<string, MasterPluginField> newMasterPluginList = new ConcurrentDictionary<string, MasterPluginField>();
+            ConcurrentBag<DataEditField> newDataEditFields = new ConcurrentBag<DataEditField>(); 
             ulong dataIndex = 0;
             Parallel.ForEach (pluginDatas, plugin =>
             {
-                ConcurrentBag<DataEditField> newDataEditFields = new ConcurrentBag<DataEditField>();
                 var list = plugin.Value.GetEditableListOfRecord();
                 double miniStep = step / (list.Count == 0 ? 1 : list.Count);
                 if (list.Count > 0)
@@ -286,22 +287,15 @@ namespace SkyrimPluginTextEditor
                     };
                     newMasterPluginList.AddOrUpdate(m.Text, newMaster, (key, oldValue) => oldValue);
                 }
-
-                lock (locker)
-                {
-                    pluginList.AddRange(newPluginList.Values.ToList().Except(pluginList));
-                    fragmentList.AddRange(newFragmentList.Values.ToList().Except(fragmentList));
-                    masterPluginList.AddRange(newMasterPluginList.Values.ToList().Except(masterPluginList));
-                    dataEditFields.AddRange(newDataEditFields);
-                }
-
-                if (!SafetyMode.IsChecked)
-                {
-                    LV_PluginList_Update();
-                    LV_FragmentList_Update();
-                    LV_ConvertList_Update();
-                }
             });
+            pluginList.AddRange(newPluginList.Values.ToList().Except(pluginList));
+            fragmentList.AddRange(newFragmentList.Values.ToList().Except(fragmentList));
+            masterPluginList.AddRange(newMasterPluginList.Values.ToList().Except(masterPluginList));
+            dataEditFields.AddRange(newDataEditFields);
+
+            LV_PluginList_Update();
+            LV_FragmentList_Update();
+            LV_ConvertList_Update();
 
             step = ProgressBarLeft() / 4;
 
@@ -329,9 +323,11 @@ namespace SkyrimPluginTextEditor
                 {
                     if (!isFirst)
                         itemX.FromRecoredsToolTip += ", ";
-                    if (count > 5 && count % 10 == 0)
+                    if (count > 0 && count % 10 == 0)
                         itemX.FromRecoredsToolTip += "\n";
                     itemX.FromRecoredsToolTip += itemY.Key;
+                    count++;
+                    isFirst = true;
                 }
             }
             LV_FragmentList_Update();
@@ -365,7 +361,7 @@ namespace SkyrimPluginTextEditor
                     wronglist += plugin.Key + " -> " + plugin.Value.ToString();
                     firstLine = false;
                 }
-                System.Windows.MessageBox.Show(wronglist, "Wrong Plugin!");
+                System.Windows.MessageBox.Show(wronglist, "ERROR : Wrong Plugin!");
             }
 
             BT_Apply_Update();
@@ -558,7 +554,8 @@ namespace SkyrimPluginTextEditor
         private void Apply_Master(string search, string result)
         {
             CB_MasterPluginBefore_Active(false);
-            int index = masterPluginList.FindIndex(x => x.MasterPluginName == search);
+            search = Util.GetStringWithNullEnd(search);
+            int index = masterPluginList.FindIndex(x => x.MasterPluginName.Contains(search));
             if (index != -1)
             {
                 if (Util.IsPluginFIle(result))
@@ -610,9 +607,12 @@ namespace SkyrimPluginTextEditor
             {
                 if (data.IsChecked && data.TextAfter != null && data.TextAfter.Length > 0)
                 {
+                    string strAftertemp = data.TextAfter;
                     data.TextAfter = Util.Replace(data.TextAfter, search, result, matchCase.IsChecked);
                     data.TextAfterDisplay = MakeAltDataEditField(data);
-                    dataEditFieldsEdited[data.Index] = data;
+
+                    if (strAftertemp != data.TextAfter)
+                        dataEditFieldsEdited[data.Index] = data;
                 }
             });
             LV_ConvertList_Update();
@@ -1012,6 +1012,7 @@ namespace SkyrimPluginTextEditor
         }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
         {
+            ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(pluginDatas, plugin =>
             {
                 foreach (var item in masterPluginList)
@@ -1024,8 +1025,25 @@ namespace SkyrimPluginTextEditor
                     plugin.Value.EditEditableList(item.Value.EditableIndex, item.Value.TextAfter);
                 }
                 plugin.Value.ApplyEditableDatas();
-                plugin.Value.Write(FileBackup.IsChecked);
+                if (!plugin.Value.Write(FileBackup.IsChecked))
+                {
+                    failFiles.Add(plugin.Key);
+                    Logger.Log.Fatal("Unable to access the file : " + plugin.Key);
+                }
             });
+            if (failFiles.Count > 0)
+            {
+                bool first = true;
+                string failFileList = "";
+                foreach (var item in failFiles)
+                {
+                    if (!first)
+                        failFileList += "\n";
+                    failFileList += item;
+                    first = false;
+                }
+                System.Windows.MessageBox.Show(failFileList, "ERROR : Unable to access the file!");
+            }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");
             SetPluginListView();
@@ -1825,6 +1843,7 @@ namespace SkyrimPluginTextEditor
     }
     public class MasterPluginField : INotifyPropertyChanged
     {
+        public PluginFile._MAST master;
         private string _MasterPluginName;
         public string MasterPluginName 
         { 
@@ -1851,6 +1870,9 @@ namespace SkyrimPluginTextEditor
     }
     public class DataEditField : INotifyPropertyChanged
     {
+        public PluginFile file;
+        public PluginFile._Record_Fragment fragment;
+
         public string PluginName { get; set; }
         public string PluginPath { get; set; }
         public string RecordType { get; set; }
