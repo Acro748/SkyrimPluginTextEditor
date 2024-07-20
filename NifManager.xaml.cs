@@ -35,9 +35,9 @@ namespace SkyrimPluginTextEditor
         private List<string> meshes = new List<string>();
         private CheckBoxBinder matchCase = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetNifManager_MatchCase() };
         private CheckBoxBinder FacegenEdit = new CheckBoxBinder() { IsChecked = false };
+        private CheckBoxBinder fileBackup = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetNifManager_FileBackup() };
         private bool MacroMode = false;
         private bool initialDone = false;
-        private bool FileBackup = true;
         private double stepSub = 3;
 
         public NifManager(List<string> folders)
@@ -52,8 +52,10 @@ namespace SkyrimPluginTextEditor
             this.Height = Config.GetSingleton.GetNifManager_Height();
             this.Width = Config.GetSingleton.GetNifManager_Width();
             matchCase.IsChecked = Config.GetSingleton.GetNifManager_MatchCase();
-            FileBackup = Config.GetSingleton.GetNifManager_FileBackup();
-            MI_FileBackup.IsChecked = FileBackup;
+            fileBackup.IsChecked = Config.GetSingleton.GetNifManager_FileBackup();
+            CB_MatchCase.DataContext = matchCase;
+            MI_FileBackup.DataContext = fileBackup;
+            MI_FaceGenEdit.DataContext = FacegenEdit;
 
             UpdateNifList(folders);
 
@@ -82,8 +84,6 @@ namespace SkyrimPluginTextEditor
             LV_NifDataList_Update(true);
             LV_BlockNameList_Update(true);
             LV_StringTypeList_Update(true);
-            CB_MatchCase_Update();
-            CB_FacegenEdit_Update();
             LoadNifFiles();
         }
 
@@ -442,7 +442,7 @@ namespace SkyrimPluginTextEditor
             {
                 if (nif.Value.IsChecked)
                 {
-                    if (FileBackup)
+                    if (fileBackup.IsChecked)
                         NifBackup(nif.Value.path);
                     nif.Value.nifFile.Save(nif.Value.path);
                 }
@@ -511,88 +511,95 @@ namespace SkyrimPluginTextEditor
 
             if (CB_AddTextType.SelectedIndex > 0 && TB_AddText.Text.Length > 0)
             {
-                LV_NifDataList_Active(false);
-                AddTextType adType = (AddTextType)CB_AddTextType.SelectedIndex;
-                string AddText = TB_AddText.Text;
-                char IsValidPath = Util.IsValidPath(AddText);
-                bool isInvalidEdit = false;
-                switch (adType)
-                {
-                    case AddTextType.AddPrefix:
-                        {
-                            Parallel.ForEach(nifDatas, data =>
-                            {
-                                if (data.IsChecked)
-                                {
-                                    if (IsValidPath == '0' || data.textureIndex == -1)
-                                    {
-                                        data.strAfter = AddText + data.strAfter;
-                                        data.strAfterDisplay = MakeDisplayName(data);
-                                        editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
-                                        ApplyNifFile(data);
-                                    }
-                                    else
-                                        isInvalidEdit = true;
-                                }
-                            });
-                            break;
-                        }
-                    case AddTextType.AddSuffix:
-                        {
-                            Parallel.ForEach(nifDatas, data =>
-                            {
-                                if (data.IsChecked)
-                                {
-                                    if (IsValidPath == '0' || data.textureIndex == -1)
-                                    {
-                                        data.strAfter = data.strAfter + AddText;
-                                        data.strAfterDisplay = MakeDisplayName(data);
-                                        editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
-                                        ApplyNifFile(data);
-                                    }
-                                    else
-                                        isInvalidEdit = true;
-                                }
-                            });
-                            break;
-                        }
-                }
-                if (isInvalidEdit)
-                    System.Windows.MessageBox.Show("Contains invalid character <" + isInvalidEdit + "> for texture path!");
-                LV_NifDataList_Update();
-                LV_NifDataList_Active();
+                Apply_AddText((AddTextType)CB_AddTextType.SelectedIndex, TB_AddText.Text);
             }
 
             if (TB_ReplaceSearch.Text.Length > 0 || TB_ReplaceResult.Text.Length > 0)
             {
-                LV_NifDataList_Active(false);
-                string ReplaceSearch = TB_ReplaceSearch.Text;
-                string ReplaceResult = TB_ReplaceResult.Text;
-                char IsValidPath = Util.IsValidPath(ReplaceResult);
-                bool isInvalidEdit = false;
-                Parallel.ForEach(nifDatas, data =>
-                {
-                    if (data.IsChecked && data.strAfter != null && data.strAfter.Length > 0)
-                    {
-                        if (IsValidPath == '0' || data.textureIndex == -1)
-                        {
-                            data.strAfter = Util.Replace(data.strAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
-                            data.strAfterDisplay = MakeDisplayName(data);
-                        }
-                        else
-                            isInvalidEdit = true;
-                    }
-                });
-                if (isInvalidEdit)
-                    System.Windows.MessageBox.Show("Contains invalid character <" + IsValidPath + "> for texture path!");
-                LV_NifDataList_Update();
-                LV_NifDataList_Active();
+                Apply_Replace(TB_ReplaceSearch.Text, TB_ReplaceResult.Text);
             }
 
             BT_Apply_Update();
             MI_Save_Active();
             ApplyActiveDelay();
         }
+        private void Apply_AddText(AddTextType adType, string addText)
+        {
+            LV_NifDataList_Active(false);
+            char IsValidPath = Util.IsValidPath(addText);
+            bool isInvalidEdit = false;
+            switch (adType)
+            {
+                case AddTextType.AddPrefix:
+                    {
+                        Parallel.ForEach(nifDatas, data =>
+                        {
+                            if (data.IsChecked)
+                            {
+                                if (IsValidPath == '0' || data.textureIndex == -1)
+                                {
+                                    data.strAfter = addText + data.strAfter;
+                                    data.strAfterDisplay = MakeDisplayName(data);
+                                    editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
+                                    ApplyNifFile(data);
+                                }
+                                else
+                                    isInvalidEdit = true;
+                            }
+                        });
+                        break;
+                    }
+                case AddTextType.AddSuffix:
+                    {
+                        Parallel.ForEach(nifDatas, data =>
+                        {
+                            if (data.IsChecked)
+                            {
+                                if (IsValidPath == '0' || data.textureIndex == -1)
+                                {
+                                    data.strAfter = data.strAfter + addText;
+                                    data.strAfterDisplay = MakeDisplayName(data);
+                                    editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
+                                    ApplyNifFile(data);
+                                }
+                                else
+                                    isInvalidEdit = true;
+                            }
+                        });
+                        break;
+                    }
+            }
+            if (isInvalidEdit)
+                System.Windows.MessageBox.Show("Contains invalid character <" + isInvalidEdit + "> for texture path!");
+            LV_NifDataList_Update();
+            LV_NifDataList_Active();
+        }
+        private void Apply_Replace(string search, string result)
+        {
+            LV_NifDataList_Active(false);
+            char IsValidPath = Util.IsValidPath(result);
+            bool isInvalidEdit = false;
+            Parallel.ForEach(nifDatas, data =>
+            {
+                if (data.IsChecked && data.strAfter != null && data.strAfter.Length > 0)
+                {
+                    if (IsValidPath == '0' || data.textureIndex == -1)
+                    {
+                        data.strAfter = Util.Replace(data.strAfter, search, result, matchCase.IsChecked);
+                        data.strAfterDisplay = MakeDisplayName(data);
+                        editedNifDatas.AddOrUpdate(data.path, data, (Key, oldValue) => data);
+                        ApplyNifFile(data);
+                    }
+                    else
+                        isInvalidEdit = true;
+                }
+            });
+            if (isInvalidEdit)
+                System.Windows.MessageBox.Show("Contains invalid character <" + IsValidPath + "> for texture path!");
+            LV_NifDataList_Update();
+            LV_NifDataList_Active();
+        }
+
         private async void ApplyActiveDelay()
         {
             await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -794,45 +801,18 @@ namespace SkyrimPluginTextEditor
 
                     if (m2 == "ADDPREFIX")
                     {
-                        Parallel.ForEach(nifDatas, item =>
-                        {
-                            if (item.IsChecked)
-                            {
-                                item.strAfter = m3 + item.strAfter;
-                                item.strAfterDisplay = MakeDisplayName(item);
-                                editedNifDatas.AddOrUpdate(item.path, item, (key, oldvalue) => item);
-                                ApplyNifFile(item);
-                            }
-                        });
+                        Apply_AddText(AddTextType.AddPrefix, m3);
                     }
                     else if (m2 == "ADDSUFFIX")
                     {
-                        Parallel.ForEach(nifDatas, item =>
-                        {
-                            if (item.IsChecked)
-                            {
-                                item.strAfter = item.strAfter + m3;
-                                item.strAfterDisplay = MakeDisplayName(item);
-                                editedNifDatas.AddOrUpdate(item.path, item, (key, oldvalue) => item);
-                                ApplyNifFile(item);
-                            }
-                        });
+                        Apply_AddText(AddTextType.AddSuffix, m3);
                     }
                     else if (m2 == "REPLACE")
                     {
                         var m4 = "";
                         if (macro.Length > 3)
                             m4 = macro[3];
-                        Parallel.ForEach(nifDatas, item =>
-                        {
-                            if (item.IsChecked)
-                            {
-                                item.strAfter = Util.Replace(item.strAfter, m3, m4, matchCase.IsChecked);
-                                item.strAfterDisplay = MakeDisplayName(item);
-                                editedNifDatas[item.path] = item;
-                                ApplyNifFile(item);
-                            }
-                        });
+                        Apply_Replace(m3, m4);
                     }
                 }
                 else if (m1 == "SAVE")
@@ -866,20 +846,6 @@ namespace SkyrimPluginTextEditor
                 System.Windows.MessageBox.Show("Macro loaded");
         }
 
-        private async void CB_MatchCase_Update()
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                CB_MatchCase.DataContext = matchCase;
-            }));
-        }
-        private async void CB_FacegenEdit_Update()
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                MI_FaceGenEdit.DataContext = FacegenEdit;
-            }));
-        }
         private async void LV_BlockNameList_Update(bool binding = false)
         {
             await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -1388,11 +1354,7 @@ namespace SkyrimPluginTextEditor
 
         private void MI_FileBackup_CheckUncheck(object sender, RoutedEventArgs e)
         {
-            MenuItem mi = sender as MenuItem;
-            if (mi == null)
-                return;
-            FileBackup = mi.IsChecked;
-            Config.GetSingleton.SetNifManager_FileBackup(FileBackup);
+            Config.GetSingleton.SetNifManager_FileBackup(fileBackup.IsChecked);
         }
 
         private void MI_FacegenEdit_CheckUncheck(object sender, RoutedEventArgs e)

@@ -5,6 +5,9 @@ using System.Windows.Media;
 using System.Windows;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
+using System.IO;
+using System.Windows.Forms.Design;
+using System.Text;
 
 namespace SkyrimPluginTextEditor
 {
@@ -160,6 +163,16 @@ namespace SkyrimPluginTextEditor
         {
             return path.Contains("FaceGeom", System.StringComparison.OrdinalIgnoreCase) 
                 && path.Contains("FaceGenData", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        static public string ReadAllText(string file, out Encoding encoding)
+        {
+            using (var reader = new StreamReader(file, true))
+            {
+                reader.ReadToEnd();
+                encoding = reader.CurrentEncoding;
+            }
+            return File.ReadAllText(file, encoding);
         }
     }
 }

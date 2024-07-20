@@ -77,8 +77,8 @@
                     <MenuItem Header="Tools">
                         <MenuItem x:Name="MI_Setting" Header="Setting" Click="MI_Setting_Click"/>
                         <Separator />
-                        <MenuItem x:Name="MI_SafetyMode" Header="Safety Mode" IsCheckable="True" Checked="MI_SafetyMode_CheckUncheck" Unchecked="MI_SafetyMode_CheckUncheck" ToolTip="if frequent crashes, enable then load speed is a little slower, but loads safely"/>
-                        <MenuItem x:Name="MI_FileBackup" Header="File Backup" IsCheckable="True" ToolTip="file backup when save file" Checked="MI_FileBackup_CheckUncheck" Unchecked="MI_FileBackup_CheckUncheck"/>
+                        <MenuItem x:Name="MI_SafetyMode" Header="Safety Mode" IsCheckable="True" IsChecked="{Binding IsChecked}" Checked="MI_SafetyMode_CheckUncheck" Unchecked="MI_SafetyMode_CheckUncheck" ToolTip="if frequent crashes, enable then load speed is a little slower, but loads safely"/>
+                        <MenuItem x:Name="MI_FileBackup" Header="File Backup" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="file backup when save file" Checked="MI_FileBackup_CheckUncheck" Unchecked="MI_FileBackup_CheckUncheck"/>
                         <Separator />
                         <MenuItem x:Name="MI_FileManager" Header="Open File Manager..." Click="MI_FileManager_Click"/>
                         <MenuItem x:Name="MI_NifManager" Header="Open Nif Manager..." Click="MI_NifManager_Click"/>

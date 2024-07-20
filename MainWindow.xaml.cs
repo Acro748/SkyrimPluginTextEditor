@@ -1,10 +1,12 @@
-﻿using Microsoft.Win32;
+﻿using log4net.Core;
+using Microsoft.Win32;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,8 +38,8 @@ namespace SkyrimPluginTextEditor
         private ConcurrentDictionary<UInt64, DataEditField> dataEditFieldsEdited = new ConcurrentDictionary<UInt64, DataEditField>();
         private Setting setting = new Setting();
         private OpenFolderDialog folderBrowser = new OpenFolderDialog() { Title = "Select plugin folders...", Multiselect = true };
-        private bool SafetyMode = false;
-        private bool FileBackup = true;
+        private CheckBoxBinder SafetyMode = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode() };
+        private CheckBoxBinder FileBackup = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_FileBackup() };
         private CheckBoxBinder matchCase = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase() };
         private bool MacroMode = false;
 
@@ -68,7 +70,6 @@ namespace SkyrimPluginTextEditor
             LV_FragmentList_Update(true);
             CB_MasterPluginBefore_Update(true);
             LV_ConvertList_Update(true);
-            CB_MatchCase_Update();
 
             LV_ConvertList_Active(false);
             LV_PluginList_Active(false);
@@ -79,10 +80,12 @@ namespace SkyrimPluginTextEditor
             MI_NifManager_Active(false);
             MI_Macro_Active(false);
 
-            SafetyMode = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode();
-            MI_SafetyMode.IsChecked = SafetyMode;
-            FileBackup = Config.GetSingleton.GetSkyrimPluginEditor_FileBackup();
-            MI_FileBackup.IsChecked = FileBackup;
+            SafetyMode.IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode();
+            FileBackup.IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_FileBackup();
+            matchCase.IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase();
+            MI_SafetyMode.DataContext = SafetyMode;
+            MI_FileBackup.DataContext = FileBackup;
+            CB_MatchCase.DataContext = matchCase;
         }
 
         private void MI_OpenFolder_Click(object sender, RoutedEventArgs e)
@@ -149,13 +152,12 @@ namespace SkyrimPluginTextEditor
             return PluginStreamBase._ErrorCode.Readed;
         }
 
-        public async void SetPluginListView()
+        public void SetPluginListView()
         {
             ProgressBarInitial();
 
             double baseStep = ProgressBarMaximum() / 5;
             double step = baseStep / selectedFolders.Count;
-            object tmpLock = new object();
 
             masterPluginList.Clear();
             pluginList.Clear();
@@ -179,234 +181,83 @@ namespace SkyrimPluginTextEditor
 
             pluginDatas.Clear();
             Dictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new Dictionary<string, PluginStreamBase._ErrorCode>();
-            if (Config.GetSingleton.GetParallelFolderRead())
+            object fileLock = new object();
+            Parallel.ForEach(selectedFolders, async folder =>
             {
-                Parallel.ForEach(selectedFolders, async folder =>
+                if (Directory.Exists(folder))
                 {
-                    if (Directory.Exists(folder))
+                    var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
+                    if (filesInDirectory.Length > 0)
                     {
-                        var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
-                        if (filesInDirectory.Length > 0)
+                        double fileStep = step / filesInDirectory.Length;
+                        Parallel.ForEach(filesInDirectory, path =>
                         {
-                            double fileStep = step / filesInDirectory.Length;
-                            Parallel.ForEach(filesInDirectory, path =>
+                            PluginStreamBase._ErrorCode errorCode = GetFile(path, fileLock);
+                            if (errorCode < 0 && -20 < (Int16)errorCode)
                             {
-                                PluginStreamBase._ErrorCode errorCode = GetFile(path, tmpLock);
-                                if (errorCode < 0 && -20 < (Int16)errorCode)
+                                string fileName = System.IO.Path.GetFileName(path);
+                                lock (fileLock)
                                 {
-                                    string fileName = System.IO.Path.GetFileName(path);
-                                    lock (tmpLock)
-                                    {
-                                        wrongPlugins.Add(fileName, errorCode);
-                                    }
+                                    wrongPlugins.Add(fileName, errorCode);
                                 }
-                                ProgressBarStep(fileStep);
-                            });
-                        }
-                        else
-                            ProgressBarStep(step);
-                    }
-                });
-            }
-            else
-            {
-                foreach (var folder in selectedFolders)
-                {
-                    if (Directory.Exists(folder))
-                    {
-                        var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
-                        if (filesInDirectory.Length > 0)
-                        {
-                            double fileStep = step / filesInDirectory.Length;
-                            foreach (var path in filesInDirectory)
-                            {
-                                PluginStreamBase._ErrorCode errorCode = GetFile(path, tmpLock);
-                                if (errorCode < 0 && -20 < (Int16)errorCode)
-                                {
-                                    string fileName = System.IO.Path.GetFileName(path);
-                                    lock (tmpLock)
-                                    {
-                                        wrongPlugins.Add(fileName, errorCode);
-                                    }
-                                }
-                                ProgressBarStep(fileStep);
                             }
-                        }
-                        else
-                            ProgressBarStep(step);
+                            ProgressBarStep(fileStep);
+                        });
                     }
+                    else
+                        ProgressBarStep(step);
                 }
-            }
+            });
 
-            bool isEndedPluginName = false;
-            bool isEndedFragment = false;
-            bool isEndedMasterPlugin = false;
-            bool isEndedConvertList = false;
+            step = baseStep / (pluginDatas.Count == 0 ? 1 : pluginDatas.Count) * 3;
 
-            step = baseStep / (pluginDatas.Count == 0 ? 1 : Math.Sqrt(pluginDatas.Count));
-            double maxCount = pluginDatas.Count / (pluginDatas.Count == 0 ? 1 : Math.Sqrt(pluginDatas.Count));
-
-            Task.Run(async () =>
+            object locker = new object();
+            ConcurrentDictionary<string, PluginListData> newPluginList = new ConcurrentDictionary<string, PluginListData>();
+            ConcurrentDictionary<string, FragmentTypeData> newFragmentList = new ConcurrentDictionary<string, FragmentTypeData>();
+            masterPluginList.Add(new MasterPluginField() { MasterPluginName = "None", MasterPluginNameOrig = "None" });
+            ConcurrentDictionary<string, MasterPluginField> newMasterPluginList = new ConcurrentDictionary<string, MasterPluginField>();
+            ulong dataIndex = 0;
+            Parallel.ForEach(pluginDatas, plugin =>
             {
-                double dataCount = 0;
-                foreach (var plugin in pluginDatas)
+                ConcurrentBag<DataEditField> newDataEditFields = new ConcurrentBag<DataEditField>();
+                var list = plugin.Value.GetEditableListOfRecord();
+                double miniStep = step / (list.Count == 0 ? 1 : list.Count);
+                if (list.Count > 0)
                 {
-                    var list = plugin.Value.GetEditableListOfRecord();
                     foreach (var item in list)
                     {
-                        if (pluginList.FindIndex(x => x.PluginName == plugin.Value.GetFileName() && x.RecordType == item.RecordType) != -1)
-                            continue;
-                        pluginList.Add(new PluginListData()
+                        var newPlugin = new PluginListData()
                         {
                             PluginName = plugin.Value.GetFileName(),
                             IsChecked = true,
                             RecordType = item.RecordType,
                             IsSelected = false,
                             PluginPath = plugin.Value.GetFilePath()
-                        });
-                    }
-                    dataCount++;
-                    if (dataCount >= maxCount)
-                    {
-                        if (!SafetyMode)
-                            LV_PluginList_Update();
-                        ProgressBarStep(step);
-                        dataCount -= maxCount;
-                    }
-                }
+                        };
+                        newPluginList.AddOrUpdate(plugin.Value.GetFilePath() + item.RecordType, newPlugin, (key, oldValue) => newPlugin);
 
-                pluginList.Sort((x, y) => { 
-                    var result = x.PluginName.CompareTo(y.PluginName);
-                    if (result == 0)
-                    {
-                        if (x.RecordType == "TES4")
-                            return -1;
-                        else if (y.RecordType == "TES4")
-                            return 1;
-                        return x.RecordType.CompareTo(y.RecordType);
-                    }
-                    return result;
-                });
-                LV_PluginList_Update();
-                LV_PluginList_Active();
-                isEndedPluginName = true;
-
-                if (isEndedPluginName && isEndedFragment && isEndedMasterPlugin && isEndedConvertList)
-                {
-                    ProgressBarDone();
-                    MI_OpenFolder_Active();
-                    MI_Macro_Active();
-                }
-            });
-
-            Task.Run(async () =>
-            {
-                double dataCount = 0;
-                foreach (var plugin in pluginDatas)
-                {
-                    var list = plugin.Value.GetEditableListOfRecord();
-                    foreach (var item in list)
-                    {
-                        int index = fragmentList.FindIndex(x => x.FragmentType == item.FragmentType);
-                        if (index != -1)
-                        {
-                            fragmentList[index].FromRecordList.Add(item.RecordType);
-                            if (fragmentList[index].FromRecordList.Count >= 10 && fragmentList[index].FromRecordList.Count % 10 == 0)
-                                fragmentList[index].FromRecoredsToolTip += "\n" + item.RecordType;
-                            else
-                                fragmentList[index].FromRecoredsToolTip += ", " + item.RecordType;
-                            continue;
-                        }
-                        fragmentList.Add(new FragmentTypeData()
+                        //fragment list
+                        var newFragment = new FragmentTypeData()
                         {
                             IsChecked = true,
                             FragmentType = item.FragmentType,
                             IsSelected = false,
-                            FromRecoredsToolTip = item.RecordType,
-                            FromRecordList = new HashSet<string> { item.RecordType },
+                            FromRecoredsToolTip = "",
+                            FromRecordList = new ConcurrentDictionary<string, string>(),
                             IsEnabled = true,
                             Foreground = System.Windows.Media.Brushes.Black
+                        };
+                        newFragment.FromRecordList.AddOrUpdate(item.RecordType, item.RecordType, (key, oldValue) => item.RecordType);
+                        newFragmentList.AddOrUpdate(item.FragmentType, newFragment, (key, oldValue) =>
+                        {
+                            oldValue.FromRecordList.AddOrUpdate(item.RecordType, item.RecordType, (key, oldValue) => item.RecordType);
+                            return oldValue;
                         });
-                    }
-                    dataCount++;
-                    if (dataCount >= maxCount)
-                    {
-                        if (!SafetyMode)
-                            LV_FragmentList_Update();
-                        ProgressBarStep(step);
-                        dataCount -= maxCount;
-                    }
-                }
 
-                fragmentList.Sort((x, y) => { return x.FragmentType.CompareTo(y.FragmentType); });
-                LV_FragmentList_Update();
-                LV_FragmentList_Active();
-
-                isEndedFragment = true;
-
-                if (isEndedPluginName && isEndedFragment && isEndedMasterPlugin && isEndedConvertList)
-                { 
-                    ProgressBarDone();
-                    MI_OpenFolder_Active();
-                    MI_Macro_Active();
-                }
-            });
-
-            Task.Run(async () =>
-            {
-                masterPluginList.Add(new MasterPluginField() { MasterPluginName = "None", MasterPluginNameOrig = "None", FromPlugins = "None" });
-                double dataCount = 0;
-                foreach (var data in pluginDatas)
-                {
-                    var list = data.Value.GetEditableListOfMAST();
-                    foreach (var m in list)
-                    {
-                        var index = masterPluginList.FindIndex(x => x.MasterPluginNameOrig == m.Text);
-                        if (index != -1)
+                        newDataEditFields.Add(new DataEditField()
                         {
-                            masterPluginList[index].FromPlugins += "\n" + data.Value.GetFilePath();
-                            continue;
-                        }
-                        masterPluginList.Add(new MasterPluginField()
-                        {
-                            MasterPluginName = m.Text,
-                            MasterPluginNameOrig = m.Text,
-                            FromPlugins = data.Value.GetFilePath()
-                        });
-                    }
-                    dataCount++;
-                    if (dataCount >= maxCount)
-                    {
-                        ProgressBarStep(step);
-                        dataCount -= maxCount;
-                    }
-                }
-
-                CB_MasterPluginBefore_Active();
-
-                isEndedMasterPlugin = true;
-
-                if (isEndedPluginName && isEndedFragment && isEndedMasterPlugin && isEndedConvertList)
-                {
-                    ProgressBarDone();
-                    MI_OpenFolder_Active();
-                    MI_Macro_Active();
-                }
-            });
-
-            Task.Run(async () =>
-            {
-                UInt64 count = 0;
-                double dataCount = 0;
-                foreach (var data in pluginDatas)
-                {
-                    var list = data.Value.GetEditableListOfRecord();
-                    foreach (var item in list)
-                    {
-                        dataEditFields.Add(new DataEditField()
-                        {
-                            PluginName = data.Key,
-                            PluginPath = data.Value.GetFilePath(),
+                            PluginName = plugin.Key,
+                            PluginPath = plugin.Value.GetFilePath(),
                             RecordType = item.RecordType,
                             FragmentType = item.FragmentType,
                             IsChecked = true,
@@ -415,35 +266,91 @@ namespace SkyrimPluginTextEditor
                             TextAfter = item.Text,
                             TextBeforeDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
                             TextAfterDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
-                            Index = count,
-                            ToolTip = data.Value.GetFilePath(),
+                            Index = Interlocked.Increment(ref dataIndex),
+                            ToolTip = plugin.Value.GetFilePath(),
                             EditableIndex = item.EditableIndex
                         });
-                        count++;
-                    }
-                    ++dataCount;
-                    if (dataCount >= maxCount)
-                    {
-                        if (!SafetyMode)
-                            LV_ConvertList_Update();
-                        ProgressBarStep(step);
-                        dataCount -= maxCount;
+
+                        ProgressBarStep(miniStep);
                     }
                 }
+                else
+                    ProgressBarStep(step);
 
-                LV_ConvertList_Update();
-                LV_ConvertList_Active();
-
-                isEndedConvertList = true;
-
-                if (isEndedPluginName && isEndedFragment && isEndedMasterPlugin && isEndedConvertList)
+                var masters = plugin.Value.GetEditableListOfMAST();
+                foreach (var m in masters)
                 {
-                    ProgressBarDone();
-                    MI_OpenFolder_Active();
-                    MI_Macro_Active();
+                    var newMaster = new MasterPluginField()
+                    {
+                        MasterPluginName = m.Text,
+                        MasterPluginNameOrig = m.Text,
+                    };
+                    newMasterPluginList.AddOrUpdate(m.Text, newMaster, (key, oldValue) => oldValue);
                 }
 
+                lock (locker)
+                {
+                    pluginList.AddRange(newPluginList.Values.ToList().Except(pluginList));
+                    fragmentList.AddRange(newFragmentList.Values.ToList().Except(fragmentList));
+                    masterPluginList.AddRange(newMasterPluginList.Values.ToList().Except(masterPluginList));
+                    dataEditFields.AddRange(newDataEditFields);
+                }
+
+                if (!SafetyMode.IsChecked)
+                {
+                    LV_PluginList_Update();
+                    LV_FragmentList_Update();
+                    LV_ConvertList_Update();
+                }
             });
+
+            step = ProgressBarLeft() / 4;
+
+            pluginList.Sort((x, y) => {
+                var result = x.PluginName.CompareTo(y.PluginName);
+                if (result == 0)
+                {
+                    if (x.RecordType == "TES4")
+                        return -1;
+                    else if (y.RecordType == "TES4")
+                        return 1;
+                    return x.RecordType.CompareTo(y.RecordType);
+                }
+                return result;
+            });
+            ProgressBarStep(step);
+
+            fragmentList.Sort((x, y) => { return x.FragmentType.CompareTo(y.FragmentType); });
+            foreach (var itemX in fragmentList)
+            {
+                bool isFirst = true;
+                int count = 0;
+                foreach (var itemY in itemX.FromRecordList)
+                {
+                    if (!isFirst)
+                        itemX.FromRecoredsToolTip += ", ";
+                    if (count > 5 && count % 10 == 0)
+                        itemX.FromRecoredsToolTip += "\n";
+                    itemX.FromRecoredsToolTip += itemY.Key;
+                }
+            }
+            ProgressBarStep(step);
+
+            DataEditFieldSort();
+            ProgressBarStep(step);
+
+            LV_PluginList_Update();
+            LV_FragmentList_Update();
+            LV_ConvertList_Update();
+
+            LV_PluginList_Active();
+            LV_FragmentList_Active();
+            CB_MasterPluginBefore_Active();
+            LV_ConvertList_Active();
+
+            ProgressBarDone();
+            MI_OpenFolder_Active();
+            MI_Macro_Active();
 
             if (wrongPlugins.Count > 0)
             {
@@ -620,75 +527,88 @@ namespace SkyrimPluginTextEditor
 
             if (CB_MasterPluginBefore.SelectedIndex > 0 && TB_MasterPluginAfter.Text.Length > 0)
             {
-                CB_MasterPluginBefore_Active(false);
-                string MasterAfter = TB_MasterPluginAfter.Text;
-                if (Util.IsPluginFIle(MasterAfter))
-                {
-                    masterPluginList[CB_MasterPluginBefore.SelectedIndex].MasterPluginName = MasterAfter;
-                }
-                CB_MasterPluginBefore_Active();
+                Apply_Master(masterPluginList[CB_MasterPluginBefore.SelectedIndex].MasterPluginName, TB_MasterPluginAfter.Text);
             }
 
             if (CB_AddTextType.SelectedIndex > 0 && TB_AddText.Text.Length > 0)
             {
-                LV_ConvertList_Active(false);
-                AddTextType adType = (AddTextType)CB_AddTextType.SelectedIndex;
-                string AddText = TB_AddText.Text;
-                switch (adType)
-                {
-                    case AddTextType.AddPrefix:
-                        {
-                            Parallel.ForEach(dataEditFields, data =>
-                            {
-                                if (data.IsChecked)
-                                {
-                                    data.TextAfter = AddText + data.TextAfter;
-                                    data.TextAfterDisplay = MakeAltDataEditField(data);
-                                    dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
-                                }
-                            });
-                            break;
-                        }
-                    case AddTextType.AddSuffix:
-                        {
-                            Parallel.ForEach(dataEditFields, data =>
-                            {
-                                if (data.IsChecked)
-                                {
-                                    data.TextAfter = data.TextAfter + AddText;
-                                    data.TextAfterDisplay = MakeAltDataEditField(data);
-                                    dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
-                                }
-                            });
-                            break;
-                        }
-                }
-                LV_ConvertList_Update();
-                LV_ConvertList_Active();
+                Apply_AddText((AddTextType)CB_AddTextType.SelectedIndex, TB_AddText.Text);
             }
 
             if (TB_ReplaceSearch.Text.Length > 0 || TB_ReplaceResult.Text.Length > 0)
             {
-                LV_ConvertList_Active(false);
-                string ReplaceSearch = TB_ReplaceSearch.Text;
-                string ReplaceResult = TB_ReplaceResult.Text;
-                Parallel.ForEach(dataEditFields, data =>
-                {
-                    if (data.IsChecked && data.TextAfter != null && data.TextAfter.Length > 0)
-                    {
-                        data.TextAfter = Util.Replace(data.TextAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
-                        data.TextAfterDisplay = MakeAltDataEditField(data);
-                        dataEditFieldsEdited[data.Index] = data;
-                    }
-                });
-                LV_ConvertList_Update();
-                LV_ConvertList_Active();
+                Apply_Replace(TB_ReplaceSearch.Text, TB_ReplaceResult.Text);
             }
 
             BT_Apply_Update();
             MI_Save_Active();
             ApplyActiveDelay();
         }
+
+        private void Apply_Master(string search, string result)
+        {
+            CB_MasterPluginBefore_Active(false);
+            int index = masterPluginList.FindIndex(x => x.MasterPluginName == search);
+            if (index != -1)
+            {
+                if (Util.IsPluginFIle(result))
+                    masterPluginList[index].MasterPluginName = result;
+                else
+                    System.Windows.MessageBox.Show("Couldn't use " + result + " as plugin name!");
+            }
+            CB_MasterPluginBefore_Active();
+        }
+        private void Apply_AddText(AddTextType adType, string addText)
+        {
+            LV_ConvertList_Active(false);
+            switch (adType)
+            {
+                case AddTextType.AddPrefix:
+                    {
+                        Parallel.ForEach(dataEditFields, data =>
+                        {
+                            if (data.IsChecked)
+                            {
+                                data.TextAfter = addText + data.TextAfter;
+                                data.TextAfterDisplay = MakeAltDataEditField(data);
+                                dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
+                            }
+                        });
+                        break;
+                    }
+                case AddTextType.AddSuffix:
+                    {
+                        Parallel.ForEach(dataEditFields, data =>
+                        {
+                            if (data.IsChecked)
+                            {
+                                data.TextAfter = data.TextAfter + addText;
+                                data.TextAfterDisplay = MakeAltDataEditField(data);
+                                dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
+                            }
+                        });
+                        break;
+                    }
+            }
+            LV_ConvertList_Update();
+            LV_ConvertList_Active();
+        }
+        private void Apply_Replace(string search, string result)
+        {
+            LV_ConvertList_Active(false);
+            Parallel.ForEach(dataEditFields, data =>
+            {
+                if (data.IsChecked && data.TextAfter != null && data.TextAfter.Length > 0)
+                {
+                    data.TextAfter = Util.Replace(data.TextAfter, search, result, matchCase.IsChecked);
+                    data.TextAfterDisplay = MakeAltDataEditField(data);
+                    dataEditFieldsEdited[data.Index] = data;
+                }
+            });
+            LV_ConvertList_Update();
+            LV_ConvertList_Active();
+        }
+
         private async void ApplyActiveDelay()
         {
             await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -851,7 +771,7 @@ namespace SkyrimPluginTextEditor
         {
             foreach (var item in fragmentList)
             {
-                if (pluginList.FindIndex(x => x.IsChecked && item.FromRecordList.Contains(x.RecordType)) != -1)
+                if (pluginList.FindIndex(x => x.IsChecked && item.FromRecordList.ContainsKey(x.RecordType)) != -1)
                 {
                     item.Foreground = System.Windows.Media.Brushes.Black;
                     item.IsEnabled = true;
@@ -936,9 +856,18 @@ namespace SkyrimPluginTextEditor
                 dataEditFieldsDisable.AddRange(found);
                 found.ForEach(x => dataEditFields.Remove(x));
             }
-            dataEditFields.Sort((x, y) => { return x.Index.CompareTo(y.Index); });
+            DataEditFieldSort();
             LV_ConvertList_Update();
             LV_ConvertList_Active(true);
+        }
+        private void DataEditFieldSort()
+        {
+            dataEditFields.Sort((x, y) => { 
+                int result = x.PluginPath.CompareTo(y.PluginPath);
+                if (result == 0)
+                    result = x.Index.CompareTo(y.Index);
+                return result;
+            });
         }
 
         private async void CB_MasterPluginBefore_Update(bool binding = false)
@@ -965,13 +894,6 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private async void CB_MatchCase_Update()
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                CB_MatchCase.DataContext = matchCase;
-            }));
-        }
         private async void LV_PluginList_Update(bool binding = false)
         {
             await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -1097,7 +1019,7 @@ namespace SkyrimPluginTextEditor
                     plugin.Value.EditEditableList(item.Value.EditableIndex, item.Value.TextAfter);
                 }
                 plugin.Value.ApplyEditableDatas();
-                plugin.Value.Write(FileBackup);
+                plugin.Value.Write(FileBackup.IsChecked);
             });
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");
@@ -1397,11 +1319,7 @@ namespace SkyrimPluginTextEditor
 
         private void MI_SafetyMode_CheckUncheck(object sender, RoutedEventArgs e)
         {
-            MenuItem mi = sender as MenuItem;
-            if (mi == null)
-                return;
-            SafetyMode = mi.IsChecked;
-            Config.GetSingleton.SetSkyrimPluginEditor_SafetyMode(SafetyMode);
+            Config.GetSingleton.SetSkyrimPluginEditor_SafetyMode(SafetyMode.IsChecked);
         }
 
         private void MI_Macro_Click(object sender, RoutedEventArgs e)
@@ -1658,50 +1576,22 @@ namespace SkyrimPluginTextEditor
                         if (macro.Length < 4)
                             continue;
                         var m4 = macro[3];
-                        var index = masterPluginList.FindIndex(x => x.MasterPluginName == m3);
-                        if (index != -1)
-                        {
-                            masterPluginList[index].MasterPluginName = m4;
-                        }
+                        Apply_Master(m3, m4);
                     }
                     else if (m2 == "ADDPREFIX")
                     {
-                        Parallel.ForEach(dataEditFields, item =>
-                        {
-                            if (item.IsChecked)
-                            {
-                                item.TextAfter = m3 + item.TextAfter;
-                                item.TextAfterDisplay = MakeAltDataEditField(item);
-                                dataEditFieldsEdited.AddOrUpdate(item.Index, item, (key, oldvalue) => item);
-                            }
-                        });
+                        Apply_AddText(AddTextType.AddPrefix, m3);
                     }
                     else if (m2 == "ADDSUFFIX")
                     {
-                        Parallel.ForEach(dataEditFields, item =>
-                        {
-                            if (item.IsChecked)
-                            {
-                                item.TextAfter = item.TextAfter + m3;
-                                item.TextAfterDisplay = MakeAltDataEditField(item);
-                                dataEditFieldsEdited.AddOrUpdate(item.Index, item, (key, oldvalue) => item);
-                            }
-                        });
+                        Apply_AddText(AddTextType.AddSuffix, m3);
                     }
                     else if (m2 == "REPLACE")
                     {
                         var m4 = "";
                         if (macro.Length > 3)
                             m4 = macro[3];
-                        Parallel.ForEach(dataEditFields, item =>
-                        {
-                            if (item.IsChecked)
-                            {
-                                item.TextAfter = Util.Replace(item.TextAfter, m3, m4, matchCase.IsChecked);
-                                item.TextAfterDisplay = MakeAltDataEditField(item);
-                                dataEditFieldsEdited[item.Index] = item;
-                            }
-                        });
+                        Apply_Replace(m3, m4);
                     }
                 }
                 else if (m1 == "SAVE")
@@ -1772,11 +1662,7 @@ namespace SkyrimPluginTextEditor
 
         private void MI_FileBackup_CheckUncheck(object sender, RoutedEventArgs e)
         {
-            MenuItem mi = sender as MenuItem;
-            if (mi == null)
-                return;
-            FileBackup = mi.IsChecked;
-            Config.GetSingleton.SetSkyrimPluginEditor_FileBackup(FileBackup);
+            Config.GetSingleton.SetSkyrimPluginEditor_FileBackup(FileBackup.IsChecked);
         }
 
         private void MI_NifManager_Active(bool Active = true)
@@ -1871,7 +1757,7 @@ namespace SkyrimPluginTextEditor
             }
         }
 
-        public HashSet<string> FromRecordList { get; set; }
+        public ConcurrentDictionary<string, string> FromRecordList { get; set; }
 
         private bool _IsChecked;
         public bool IsChecked
@@ -1946,7 +1832,6 @@ namespace SkyrimPluginTextEditor
             }
         }
         public string MasterPluginNameOrig { get; set; }
-        public string FromPlugins { get; set; }
         public bool IsEdited { get; set; }
 
 

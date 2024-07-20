@@ -74,7 +74,7 @@
             <DockPanel Grid.Column="1" Grid.Row="0">
                 <Menu>
                     <MenuItem Header="Tools">
-                        <MenuItem x:Name="MI_FileBackup" Header="File Backup" IsCheckable="True" ToolTip="file backup when save file" Checked="MI_FileBackup_CheckUncheck" Unchecked="MI_FileBackup_CheckUncheck"/>
+                        <MenuItem x:Name="MI_FileBackup" Header="File Backup" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="file backup when save file" Checked="MI_FileBackup_CheckUncheck" Unchecked="MI_FileBackup_CheckUncheck"/>
                         <MenuItem x:Name="MI_FaceGenEdit" Header="Facegen Edit Mode" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="Enter the edit mode for facegen only. Warning! Editing Facegen mesh may cause NPCs to fail to display normally" Checked="MI_FacegenEdit_CheckUncheck" Unchecked="MI_FacegenEdit_CheckUncheck"/>
                     </MenuItem>
                 </Menu>
@@ -228,7 +228,7 @@
                         </Grid.ColumnDefinitions>
                         <Grid Grid.Column="1">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="3*"/>
+                                <RowDefinition Height="2*"/>
                                 <RowDefinition Height="2*"/>
                             </Grid.RowDefinitions>
                             <Grid Grid.Row="0">

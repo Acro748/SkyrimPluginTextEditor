@@ -73,9 +73,9 @@
             <DockPanel Grid.Column="1" Grid.Row="0">
                 <Menu>
                     <MenuItem Header="Tools">
-                        <MenuItem x:Name="MI_FileOverwrite" Header="File Overwrite" IsCheckable="True" ToolTip="If file exists in a new path, overwrite it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
-                        <MenuItem x:Name="MI_ClearSubFolder" Header="Clear empty SubFolder" IsCheckable="True" ToolTip="When saving files, if the sub folder is empty, remove it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
-                        <MenuItem x:Name="MI_NonSkyrimFile" Header="Non Skyrim File" IsCheckable="True" Checked="MI_NonSkyrimFile_CheckUncheck" Unchecked="MI_NonSkyrimFile_CheckUncheck" ToolTip="Display non skyrim file to editable" IsChecked="{Binding IsChecked}"/>
+                        <MenuItem x:Name="MI_FileOverwrite" Header="File Overwrite" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="If file exists in a new path, overwrite it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
+                        <MenuItem x:Name="MI_ClearSubFolder" Header="Clear empty SubFolder" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="When saving files, if the sub folder is empty, remove it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
+                        <MenuItem x:Name="MI_NonSkyrimFile" Header="Non Skyrim File" IsCheckable="True" IsChecked="{Binding IsChecked}" Checked="MI_NonSkyrimFile_CheckUncheck" Unchecked="MI_NonSkyrimFile_CheckUncheck" ToolTip="Display non skyrim file to editable"/>
                         <Separator />
                         <MenuItem x:Name="MI_NifManager" Header="Open Nif Manager..." Click="MI_NifManager_Click"/>
                     </MenuItem>
@@ -128,7 +128,7 @@
                                     <ColumnDefinition Width="100"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="TB_ReplaceSearch" Grid.Column="0" Margin="1,3,1,3" TextChanged="TB_TextChanged"></TextBox>
-                                <CheckBox x:Name="CB_MatchCase" Grid.Column="1" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Match Case" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
+                                <CheckBox x:Name="CB_MatchCase" Grid.Column="1" Margin="1,3,1,3" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Match Case" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig" IsChecked="{Binding IsChecked}"/>
                             </Grid>
                             <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
