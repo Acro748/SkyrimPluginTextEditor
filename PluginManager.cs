@@ -320,6 +320,113 @@ namespace SkyrimPluginTextEditor
             File.Copy(path, target, true);
             Logger.Log.Info("Backup file... : " + path);
         }
+
+        public _Record GetRecord(UInt32 formID)
+        {
+            if (plugin == null)
+                return null;
+            foreach (var g in plugin.Group)
+            {
+                _Record find = GetRecord(formID, g);
+                if (find != null)
+                    return find;
+            }
+            return null;
+        }
+        private _Record GetRecord(UInt32 formID, _GRUP group)
+        {
+            foreach (var rg in group.Record)
+            {
+                _Record find = null;
+                if (rg is _GRUP)
+                {
+                    find = GetRecord(formID, rg as _GRUP);
+                    if (find != null)
+                        return find;
+                }
+                else
+                {
+                    _Record r = rg as _Record;
+                    if (r.RecordHeader.FormID == formID)
+                        return r;
+                }
+            }
+            return null;
+        }
+        public List<_Record> GetRecords(string signiture)
+        {
+            List<_Record> finds = new List<_Record>();
+            if (plugin == null || signiture.Length != 4)
+                return finds;
+            return GetRecords(signiture.ToCharArray());
+        }
+        public List<_Record> GetRecords(char[] signiture)
+        {
+            List<_Record> finds = new List<_Record>();
+            if (plugin == null || signiture.Length != 4)
+                return finds;
+            foreach (var g in plugin.Group)
+            {
+                finds.AddRange(GetRecords(signiture, g));
+            }
+            return finds;
+        }
+        private List<_Record> GetRecords(char[] signiture, _GRUP group)
+        {
+            List<_Record> finds = new List<_Record>();
+            foreach (var rg in group.Record)
+            {
+                if (rg is _GRUP)
+                {
+                    finds.AddRange(GetRecords(signiture, rg as _GRUP));
+                }
+                else
+                {
+                    _Record r = rg as _Record;
+                    if (r.RecordHeader.Signature == signiture)
+                        finds.Add(r);
+                }
+            }
+            return finds;
+        }
+        public _GRUP GetGroup(string groupInfo)
+        {
+            if (plugin == null || groupInfo.Length != 4)
+                return null;
+            return GetGroup(GetBytes(groupInfo));
+        }
+        public _GRUP GetGroup(char[] groupInfo)
+        {
+            if (plugin == null || groupInfo.Length != 4)
+                return null;
+            return GetGroup(GetBytes(groupInfo));
+        }
+        public _GRUP GetGroup(byte[] groupInfo)
+        {
+            if (plugin == null || groupInfo.Length != 4)
+                return null;
+            foreach (var g in plugin.Group)
+            {
+                _GRUP find = GetGroup(groupInfo, g);
+                if (find != null) 
+                    return find;
+            }
+            return null;
+        }
+        private _GRUP GetGroup(byte[] groupInfo, _GRUP group)
+        {
+            foreach (var rg in group.Record)
+            {
+                if (rg is _GRUP)
+                {
+                    _GRUP g = rg as _GRUP;
+                    if (g.GroupInfo == groupInfo)
+                        return g;
+                    GetGroup(groupInfo, rg as _GRUP);
+                }
+            }
+            return null;
+        }
     }
 
     public class LocalizeData : PluginStreamBase
@@ -566,9 +673,10 @@ namespace SkyrimPluginTextEditor
             return false;
         }
 
-        public void Write()
+        public void Write(bool fileBackup = true)
         {
-            StringsBackup();
+            if (fileBackup)
+                StringsBackup();
 
             if (STRINGS != null)
             {
@@ -1253,7 +1361,7 @@ namespace SkyrimPluginTextEditor
             fragment.Data = GetBytes(editableList[index].Text);
         }
 
-        public void Write()
+        public void Write(bool fileBackup = true)
         {
             if (!IsEdited)
                 return;
@@ -1276,13 +1384,15 @@ namespace SkyrimPluginTextEditor
                 fileData.AddRange(GetByteList(group));
             }
 
-            PluginBackup();
+            if (fileBackup)
+                PluginBackup();
+
             using (file = new FileStream(path, FileMode.Truncate, FileAccess.Write))
                 file.Write(fileData.ToArray(), 0, fileData.Count);
             Logger.Log.Info("Write done : " + path);
 
             if (Localize != null)
-                Localize.Write();
+                Localize.Write(fileBackup);
         }
 
         public List<byte> GetByteList(_RecordHeader header, int dataSize)

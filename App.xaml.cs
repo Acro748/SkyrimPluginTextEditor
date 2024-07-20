@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 
 namespace SkyrimPluginTextEditor
 {
@@ -14,13 +7,15 @@ namespace SkyrimPluginTextEditor
     /// </summary>
     public partial class App : Application
     {
-        public static readonly string Version = "v1.2.0";
+        public static readonly string Version = "v1.3.0";
+        public static MainWindow mainWindow = new MainWindow();
+        public static FileManager fileManager = null;
+        public static NifManager nifManager = null;
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             Config.GetSingleton.ConfigRead();
-            MainWindow newWindow = new MainWindow();
-            newWindow.Title += " " + Version;
-            newWindow.Show();
+            mainWindow.Title += " " + Version;
+            mainWindow.Show();
         }
     }
 }

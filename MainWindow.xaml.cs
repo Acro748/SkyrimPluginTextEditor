@@ -24,6 +24,23 @@ namespace SkyrimPluginTextEditor
 
     public partial class MainWindow : Window
     {
+        private List<string> selectedFolders = new List<string>();
+        public List<string> GetSelectedFolders() { return selectedFolders; }
+        private Dictionary<string, PluginManager> pluginDatas = new Dictionary<string, PluginManager>(); //fullpath, plugindata
+        private List<PluginListData> pluginList = new List<PluginListData>();
+        private List<FragmentTypeData> fragmentList = new List<FragmentTypeData>();
+        private List<PluginToggleData> inactiveList = new List<PluginToggleData>(); //if there is a data then set invisible it
+        private List<MasterPluginField> masterPluginList = new List<MasterPluginField>();
+        private List<DataEditField> dataEditFields = new List<DataEditField>();
+        private List<DataEditField> dataEditFieldsDisable = new List<DataEditField>();
+        private ConcurrentDictionary<UInt64, DataEditField> dataEditFieldsEdited = new ConcurrentDictionary<UInt64, DataEditField>();
+        private Setting setting = new Setting();
+        private OpenFolderDialog folderBrowser = new OpenFolderDialog() { Title = "Select plugin folders...", Multiselect = true };
+        private bool SafetyMode = false;
+        private bool FileBackup = true;
+        private CheckBoxBinder matchCase = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase() };
+        private bool MacroMode = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -59,28 +76,14 @@ namespace SkyrimPluginTextEditor
             MI_Reset_Active(false);
             MI_Save_Active(false);
             MI_FileManager_Active(false);
+            MI_NifManager_Active(false);
             MI_Macro_Active(false);
 
             SafetyMode = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode();
             MI_SafetyMode.IsChecked = SafetyMode;
+            FileBackup = Config.GetSingleton.GetSkyrimPluginEditor_FileBackup();
+            MI_FileBackup.IsChecked = FileBackup;
         }
-
-        private List<string> selectedFolders = new List<string>();
-        public List<string> GetSelectedFolders() { return selectedFolders; }
-        private Dictionary<string, PluginManager> pluginDatas = new Dictionary<string, PluginManager>(); //fullpath, plugindata
-        private List<PluginListData> pluginList = new List<PluginListData>();
-        private List<FragmentTypeData> fragmentList = new List<FragmentTypeData>();
-        private List<PluginToggleData> inactiveList = new List<PluginToggleData>(); //if there is a data then set invisible it
-        private List<MasterPluginField> masterPluginList = new List<MasterPluginField>();
-        private List<DataEditField> dataEditFields = new List<DataEditField>();
-        private List<DataEditField> dataEditFieldsDisable = new List<DataEditField>();
-        private ConcurrentDictionary<UInt64, DataEditField> dataEditFieldsEdited = new ConcurrentDictionary<UInt64, DataEditField>();
-        private FileManager fm = null;
-        private Setting setting = new Setting();
-        private OpenFolderDialog folderBrowser = new OpenFolderDialog() { Title = "Select plugin folders...", Multiselect = true };
-        private bool SafetyMode = false;
-        private MatchCase matchCase = new MatchCase() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase() };
-        private bool MacroMode = false;
 
         private void MI_OpenFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -112,6 +115,9 @@ namespace SkyrimPluginTextEditor
                 if (parent != null)
                     Config.GetSingleton.SetDefaultPath(parent.FullName);
             }
+
+            if (App.fileManager != null && App.fileManager.IsLoaded)
+                App.fileManager.UpdateFolderList(selectedFolders);
         }
         private void MI_OpenFolder_Active(bool Active = true)
         {
@@ -143,7 +149,7 @@ namespace SkyrimPluginTextEditor
             return PluginStreamBase._ErrorCode.Readed;
         }
 
-        private async void SetPluginListView()
+        public async void SetPluginListView()
         {
             ProgressBarInitial();
 
@@ -168,6 +174,7 @@ namespace SkyrimPluginTextEditor
             MI_Reset_Active(true);
             MI_Save_Active(false);
             MI_FileManager_Active(false);
+            MI_NifManager_Active(false);
             MI_OpenFolder_Active(false);
 
             pluginDatas.Clear();
@@ -303,14 +310,11 @@ namespace SkyrimPluginTextEditor
                         int index = fragmentList.FindIndex(x => x.FragmentType == item.FragmentType);
                         if (index != -1)
                         {
-                            if (fragmentList[index].FromRecordList.FindIndex(x => x == item.RecordType) == -1)
-                            {
-                                fragmentList[index].FromRecordList.Add(item.RecordType);
-                                if (fragmentList[index].FromRecordList.Count >= 10 && fragmentList[index].FromRecordList.Count % 10 == 0)
-                                    fragmentList[index].FromRecoredsToolTip += "\n" + item.RecordType;
-                                else
-                                    fragmentList[index].FromRecoredsToolTip += ", " + item.RecordType;
-                            }
+                            fragmentList[index].FromRecordList.Add(item.RecordType);
+                            if (fragmentList[index].FromRecordList.Count >= 10 && fragmentList[index].FromRecordList.Count % 10 == 0)
+                                fragmentList[index].FromRecoredsToolTip += "\n" + item.RecordType;
+                            else
+                                fragmentList[index].FromRecoredsToolTip += ", " + item.RecordType;
                             continue;
                         }
                         fragmentList.Add(new FragmentTypeData()
@@ -319,8 +323,8 @@ namespace SkyrimPluginTextEditor
                             FragmentType = item.FragmentType,
                             IsSelected = false,
                             FromRecoredsToolTip = item.RecordType,
-                            FromRecordList = new List<string> { item.RecordType },
-                            IsEnable = true,
+                            FromRecordList = new HashSet<string> { item.RecordType },
+                            IsEnabled = true,
                             Foreground = System.Windows.Media.Brushes.Black
                         });
                     }
@@ -402,6 +406,7 @@ namespace SkyrimPluginTextEditor
                         dataEditFields.Add(new DataEditField()
                         {
                             PluginName = data.Key,
+                            PluginPath = data.Value.GetFilePath(),
                             RecordType = item.RecordType,
                             FragmentType = item.FragmentType,
                             IsChecked = true,
@@ -456,6 +461,7 @@ namespace SkyrimPluginTextEditor
 
             BT_Apply_Update();
             MI_FileManager_Active();
+            MI_NifManager_Active();
         }
 
         double ProgressBarMax = 10000;
@@ -565,7 +571,6 @@ namespace SkyrimPluginTextEditor
             GVC_ConvertListAfter.Width = GVC_ConvertListAfter.Width * Ratio;
             GVC_Plugins.Width = GVC_Plugins.Width * Ratio;
             GVC_Fragments.Width = GVC_Fragments.Width * Ratio;
-            GVC_ConvertListBefore.Width = GVC_ConvertListBefore.Width * Ratio;
         }
 
         private void BT_Apply_Active(bool Active = true)
@@ -833,15 +838,15 @@ namespace SkyrimPluginTextEditor
         {
             foreach (var item in fragmentList)
             {
-                if (pluginList.FindIndex(x => x.IsChecked && item.FromRecordList.FindIndex(y => x.RecordType == y) != -1) != -1)
+                if (pluginList.FindIndex(x => x.IsChecked && item.FromRecordList.Contains(x.RecordType)) != -1)
                 {
                     item.Foreground = System.Windows.Media.Brushes.Black;
-                    item.IsEnable = true;
+                    item.IsEnabled = true;
                 }
                 else
                 {
                     item.Foreground = System.Windows.Media.Brushes.LightGray;
-                    item.IsEnable = false;
+                    item.IsEnabled = false;
                 }
             }
             LV_FragmentList_Update();
@@ -898,7 +903,7 @@ namespace SkyrimPluginTextEditor
             {
                 found.AddRange(dataEditFieldsDisable.FindAll(x =>
                     inactiveList.FindIndex(y =>
-                        (y.PluginPath != "0000" ? x.ToolTip == y.PluginPath : true)
+                        (y.PluginPath != "0000" ? x.PluginPath == y.PluginPath : true)
                         && (y.RecordType != "0000" ? x.RecordType == y.RecordType : true)
                         && (y.FragmentType != "0000" ? x.FragmentType == y.FragmentType : true)
                         ) == -1
@@ -910,7 +915,7 @@ namespace SkyrimPluginTextEditor
             {
                 found.AddRange(dataEditFields.FindAll(x =>
                     inactiveList.FindIndex(y =>
-                        (y.PluginPath != "0000" ? x.ToolTip == y.PluginPath : true)
+                        (y.PluginPath != "0000" ? x.PluginPath == y.PluginPath : true)
                         && (y.RecordType != "0000" ? x.RecordType == y.RecordType : true)
                         && (y.FragmentType != "0000" ? x.FragmentType == y.FragmentType : true)
                     ) != -1
@@ -947,6 +952,14 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
+        private void CB_MatchCase_Update()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                CB_MatchCase.DataContext = matchCase;
+            }));
+            Task.Delay(TimeSpan.FromTicks(1));
+        }
         private void LV_PluginList_Update(bool binding = false)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
@@ -964,14 +977,6 @@ namespace SkyrimPluginTextEditor
                     ICollectionView view = CollectionViewSource.GetDefaultView(pluginList);
                     view.Refresh();
                 }
-            }));
-            Task.Delay(TimeSpan.FromTicks(1));
-        }
-        private void CB_MatchCase_Update()
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                CB_MatchCase.DataContext = matchCase;
             }));
             Task.Delay(TimeSpan.FromTicks(1));
         }
@@ -1080,7 +1085,7 @@ namespace SkyrimPluginTextEditor
                     plugin.Value.EditEditableList(item.Value.EditableIndex, item.Value.TextAfter);
                 }
                 plugin.Value.ApplyEditableDatas();
-                plugin.Value.Write();
+                plugin.Value.Write(FileBackup);
             });
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");
@@ -1089,10 +1094,10 @@ namespace SkyrimPluginTextEditor
 
         private void MI_FileManager_Click(object sender, RoutedEventArgs e)
         {
-            if (fm != null && fm.IsLoaded)
+            if (App.fileManager != null && App.fileManager.IsLoaded)
                 return;
-            fm = new FileManager(selectedFolders);
-            fm.Show();
+            App.fileManager = new FileManager(selectedFolders);
+            App.fileManager.Show();
         }
         private void MI_FileManager_Active(bool Active = true)
         {
@@ -1389,16 +1394,13 @@ namespace SkyrimPluginTextEditor
 
         private void MI_Macro_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Multiselect = false;
-            openFileDialog.Title = "Open macro...";
-            openFileDialog.Filter = "macro file (*.spt, *.txt)|*.spt;*.txt";
-
-            if (!(openFileDialog.ShowDialog() ?? false))
+            string file = Util.GetMacroFile();
+            if (file == "")
                 return;
-            var file = openFileDialog.FileName;
+
             bool isTextEdit = false;
             bool isFileEdit = false;
+            bool isNifEdit = false;
             bool isSave = false;
 
             LV_PluginList_Active(false);
@@ -1409,6 +1411,7 @@ namespace SkyrimPluginTextEditor
             MI_OpenFolder_Active(false);
             MI_Reset_Active(false);
             MI_FileManager_Active(false);
+            MI_NifManager_Active(false);
             MacroMode = true;
 
             foreach (var line in File.ReadLines(file))
@@ -1422,6 +1425,11 @@ namespace SkyrimPluginTextEditor
                 {
                     isTextEdit = false;
                     isFileEdit = true;
+                }
+                else if (line == "NIFEDIT")
+                {
+                    isTextEdit = false;
+                    isNifEdit = true;
                 }
 
                 if (!isTextEdit)
@@ -1705,26 +1713,77 @@ namespace SkyrimPluginTextEditor
             MI_OpenFolder_Active();
             MI_Reset_Active();
             MI_FileManager_Active();
+            MI_NifManager_Active();
 
             if (isFileEdit)
             {
-                if (fm != null && fm.IsLoaded)
-                    return;
-                fm = new FileManager(selectedFolders);
-                fm.Show();
-                while(!fm.IsInit())
+                App.fileManager = new FileManager(selectedFolders);
+                //App.fileManager.Show();
+                while(!App.fileManager.IsInitialDone())
                 {
                     Task.Delay(100);
                 }
-                fm.Macro_Load(sender, e, file, true);
+                App.fileManager.Macro_Load(sender, e, file, !App.fileManager.IsLoaded);
+            }
+            if (isNifEdit)
+            {
+                App.nifManager = new NifManager(selectedFolders);
+                //App.nifManager.Show();
+                while (!App.nifManager.IsInitialDone())
+                {
+                    Task.Delay(100);
+                }
+                App.nifManager.Macro_Load(sender, e, file, !App.nifManager.IsLoaded);
             }
 
             MacroMode = false;
             System.Windows.MessageBox.Show("Macro loaded");
         }
+
+        private void MI_HyperLink_Click(object sender, RoutedEventArgs e)
+        {
+            MenuItem mi = sender as MenuItem;
+            string url = "";
+            if (mi == MI_Discord)
+                url = "https://discord.gg/bVTuD2J2bE";
+            else if (mi == MI_Patreon)
+                url = "https://www.patreon.com/acro748";
+            else if (mi == MI_GitHub)
+                url = "https://github.com/Acro748/SkyrimPluginTextEditor";
+
+            if (url == "")
+                return;
+
+            var sInfo = new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true };
+            System.Diagnostics.Process.Start(sInfo);
+        }
+
+        private void MI_FileBackup_CheckUncheck(object sender, RoutedEventArgs e)
+        {
+            MenuItem mi = sender as MenuItem;
+            if (mi == null)
+                return;
+            FileBackup = mi.IsChecked;
+            Config.GetSingleton.SetSkyrimPluginEditor_FileBackup(FileBackup);
+        }
+
+        private void MI_NifManager_Active(bool Active = true)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                MI_NifManager.IsEnabled = Active;
+            }));
+        }
+        private void MI_NifManager_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.nifManager != null && App.nifManager.IsLoaded)
+                return;
+            App.nifManager = new NifManager(selectedFolders);
+            App.nifManager.Show();
+        }
     }
 
-    public class MatchCase : INotifyPropertyChanged
+    public class CheckBoxBinder : INotifyPropertyChanged
     {
         private bool _IsChecked;
         public bool IsChecked
@@ -1800,7 +1859,7 @@ namespace SkyrimPluginTextEditor
             }
         }
 
-        public List<string> FromRecordList { get; set; }
+        public HashSet<string> FromRecordList { get; set; }
 
         private bool _IsChecked;
         public bool IsChecked
@@ -1824,13 +1883,13 @@ namespace SkyrimPluginTextEditor
             }
         }
 
-        private bool _IsEnable;
-        public bool IsEnable
+        private bool _IsEnabled;
+        public bool IsEnabled
         {
-            get { return _IsEnable; }
+            get { return _IsEnabled; }
             set
             {
-                _IsEnable = value;
+                _IsEnabled = value;
                 OnPropertyChanged("IsEnable");
             }
         }
@@ -1892,6 +1951,7 @@ namespace SkyrimPluginTextEditor
     public class DataEditField : INotifyPropertyChanged
     {
         public string PluginName { get; set; }
+        public string PluginPath { get; set; }
         public string RecordType { get; set; }
         public string FragmentType { get; set; }
         public string TextBefore { get; set; }

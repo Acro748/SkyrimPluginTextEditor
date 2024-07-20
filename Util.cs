@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using Microsoft.Win32;
 
 namespace SkyrimPluginTextEditor
 {
-    internal class Util
+    static class Util
     {
         static public bool IsPluginFIle(string file)
         {
@@ -134,6 +132,34 @@ namespace SkyrimPluginTextEditor
         static public string Replace(string source, string search, string replace, bool MatchCase)
         {
             return Regex.Replace(source, Regex.Escape(search), replace, MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
+        }
+
+        static public char IsValidPath(string path)
+        {
+            foreach (var c in path)
+            {
+                if (c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == 'I')
+                    return c;
+            }
+            return '0';
+        }
+
+        static public string GetMacroFile()
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Multiselect = false;
+            openFileDialog.Title = "Open macro...";
+            openFileDialog.Filter = "macro file (*.spt, *.txt)|*.spt;*.txt|All file (*.*)|*.*";
+
+            if (!(openFileDialog.ShowDialog() ?? false))
+                return "";
+            return openFileDialog.FileName;
+        }
+
+        static public bool IsFacegenMesh(string path)
+        {
+            return path.Contains("FaceGeom", System.StringComparison.OrdinalIgnoreCase) 
+                && path.Contains("FaceGenData", System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }

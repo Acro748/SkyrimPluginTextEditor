@@ -1,10 +1,8 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,7 +25,7 @@ namespace SkyrimPluginTextEditor
         private ConcurrentDictionary<string, MoveFileSet> filesEdited = new ConcurrentDictionary<string, MoveFileSet>();
         private List<Extensions> extensionList = new List<Extensions>();
         private bool isContentEdited = false;
-        private MatchCase matchCase = new MatchCase() { IsChecked = Config.GetSingleton.GetFileManager_MatchCase() };
+        private CheckBoxBinder matchCase = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetFileManager_MatchCase() };
         private bool initialDone = false;
         private FileContent fileContent = new FileContent() { IsChecked = Config.GetSingleton.GetFileManager_FileContent() };
         private NonSkyrimFile nonSkyrimFile = new NonSkyrimFile() { IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile() };
@@ -35,27 +33,31 @@ namespace SkyrimPluginTextEditor
 
         public FileManager(List<string> folders)
         {
-            selectedFolders = folders;
             InitializeComponent();
             SizeChangeAll(Config.GetSingleton.GetFileManager_Width() / this.Width);
             this.Height = Config.GetSingleton.GetFileManager_Height();
             this.Width = Config.GetSingleton.GetFileManager_Width();
+            MI_FileOverwrite.IsChecked = Config.GetSingleton.GetFileManager_FileOverwrite();
+            MI_ClearSubFolder.IsChecked = Config.GetSingleton.GetFileManager_ClearEmptySubFolder();
+            MI_NonSkyrimFile.IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile();
+            UpdateFolderList(folders);
+
+            initialDone = true;
+        }
+
+        public void UpdateFolderList(List<string> folders)
+        {
+            selectedFolders = folders;
             LV_FileList_Update(true);
             LV_ExtensionList_Update(true);
             MI_Reset_Active(true);
             MI_Save_Active(false);
             MI_Macro_Active(false);
             GetFiles();
-
-            MI_FileOverwrite.IsChecked = Config.GetSingleton.GetFileManager_FileOverwrite();
-            MI_ClearSubFolder.IsChecked = Config.GetSingleton.GetFileManager_ClearEmptySubFolder();
-            MI_NonSkyrimFile.IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile();
-
             MI_Macro_Active(true);
-            initialDone = true;
         }
 
-        public bool IsInit() { return initialDone; }
+        public bool IsInitialDone() { return initialDone; }
 
         private void GetFile(string path, object tmpLock)
         {
@@ -64,6 +66,7 @@ namespace SkyrimPluginTextEditor
 
             newFile.FileBefore = Util.GetRelativePath(path);
             newFile.FileAfter = newFile.FileBefore;
+            newFile.FileFullPath = path;
             newFile.IsChecked = true;
             newFile.IsSelected = false;
             newFile.NonSkyrimFile = !Util.IsPossibleRelativePath(path);
@@ -132,7 +135,6 @@ namespace SkyrimPluginTextEditor
             nonSkyrimFiles.Clear();
             filesEdited.Clear();
 
-            Dictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new Dictionary<string, PluginStreamBase._ErrorCode>();
             foreach (var folder in selectedFolders)
             {
                 if (Directory.Exists(folder))
@@ -187,20 +189,38 @@ namespace SkyrimPluginTextEditor
                 LV_FileList_Active(false);
                 string ReplaceSearch = TB_ReplaceSearch.Text;
                 string ReplaceResult = TB_ReplaceResult.Text;
+                char IsValidPathSearch = Util.IsValidPath(ReplaceSearch);
+                char IsValidPathResult = Util.IsValidPath(ReplaceResult);
+                if (!fileContent.IsChecked)
+                {
+                    if (IsValidPathSearch != '0')
+                    {
+                        System.Windows.MessageBox.Show("Contains invalid character! <" + IsValidPathSearch + ">");
+                        return;
+                    }
+                    else if (IsValidPathResult != '0')
+                    {
+                        System.Windows.MessageBox.Show("Contains invalid character! <" + IsValidPathResult + ">");
+                        return;
+                    }
+                }
                 isContentEdited = isContentEdited ? isContentEdited : fileContent.IsChecked;
                 Parallel.ForEach(files, file =>
                 {
                     if (file.IsChecked)
                     {
-                        file.FileAfter = Util.Replace(file.FileAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
-                        file.DisplayAfter = file.FileAfter;
+                        if (IsValidPathSearch == '0' && IsValidPathResult == '0')
+                        {
+                            file.FileAfter = Util.Replace(file.FileAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
+                            file.DisplayAfter = file.FileAfter;
+                        }
                         if (fileContent.IsChecked && file.IsContainsContent)
                         {
                             file.FileContentAfter = Util.Replace(file.FileContentAfter, ReplaceSearch, ReplaceResult, matchCase.IsChecked);
                             file.TooltipAfter = file.FileContentAfter;
                             file.IsContentEdited = true;
                         }
-                        filesEdited[file.FileBefore] = file;
+                        filesEdited.AddOrUpdate(file.FileBefore, file, (key, oldValue) => file);
                     }
                 });
                 LV_FileList_Update();
@@ -488,6 +508,7 @@ namespace SkyrimPluginTextEditor
             }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Move/Edit done!");
+            App.mainWindow.SetPluginListView();
             GetFiles();
         }
 
@@ -853,20 +874,16 @@ namespace SkyrimPluginTextEditor
 
         private void MI_Macro_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Multiselect = false;
-            openFileDialog.Title = "Open macro...";
-            openFileDialog.Filter = "macro file (*.spt, *.txt) | *.spt, *.txt | All file (*.*) | *.*";
-
-            if (!(openFileDialog.ShowDialog() ?? false))
+            string file = Util.GetMacroFile();
+            if (file == "")
                 return;
-            var file = openFileDialog.FileName;
             Macro_Load(sender, e, file, false);
         }
 
         public void Macro_Load(object sender, RoutedEventArgs e, string file, bool endClose)
         {
             bool isFileEdit = false;
+            bool isNifEdit = false;
             bool isSave = false;
 
             BT_Apply_Active(false);
@@ -880,6 +897,11 @@ namespace SkyrimPluginTextEditor
             {
                 if (line == "TEXTEDIT")
                     isFileEdit = false;
+                else if (line == "NIFEDIT")
+                {
+                    isFileEdit = false;
+                    isNifEdit = true;
+                }
                 else if (line == "FILEEDIT")
                     isFileEdit = true;
 
@@ -1026,26 +1048,43 @@ namespace SkyrimPluginTextEditor
                 Task.Delay(100);
             }
 
+            if (!isSave)
+            {
+                LV_FileList_Sort();
+                LV_FileList_Update();
+                LV_ExtensionList_Update();
+            }
             BT_Apply_Update();
             LV_ExtensionList_Active();
             LV_FileList_Active();
             MI_Reset_Active();
             MI_Save_Active();
 
+            if (isNifEdit && !endClose)
+            {
+                App.nifManager = new NifManager(selectedFolders);
+                App.nifManager.Show();
+                while (!App.nifManager.IsInitialDone())
+                {
+                    Task.Delay(100);
+                }
+                App.nifManager.Macro_Load(sender, e, file, !App.nifManager.IsLoaded);
+            }
+
             MacroMode = false;
 
-            if (endClose)
+            if (endClose && isSave)
                 this.Close();
-            else
-            {
-                if (!isSave)
-                {
-                    LV_ExtensionList_Update();
-                    LV_FileList_Sort();
-                    LV_FileList_Update();
-                }
+            else if (!endClose)
                 System.Windows.MessageBox.Show("Macro loaded");
-            }
+        }
+
+        private void MI_NifManager_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.nifManager != null && App.nifManager.IsLoaded)
+                return;
+            App.nifManager = new NifManager(selectedFolders);
+            App.nifManager.Show();
         }
     }
     public class FileContent : INotifyPropertyChanged
@@ -1101,6 +1140,7 @@ namespace SkyrimPluginTextEditor
         public string FileBefore { get; set; }
         public string FileAfter { get; set; }
         public string FileExtension { get; set; }
+        public string FileFullPath { get; set; }
 
         public string FileContentBefore { get; set; }
         public string FileContentAfter { get; set; }

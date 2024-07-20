@@ -1,14 +1,7 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Shapes;
 
 namespace SkyrimPluginTextEditor
 {
@@ -123,6 +116,7 @@ namespace SkyrimPluginTextEditor
         public double GetSkyrimPluginEditor_Height() { return configContainer.skyrimPluginEditor.Height; }
         public double GetSkyrimPluginEditor_Width() { return configContainer.skyrimPluginEditor.Width; }
         public bool GetSkyrimPluginEditor_MatchCase() { return configContainer.skyrimPluginEditor.MatchCase; }
+        public bool GetSkyrimPluginEditor_FileBackup() { return configContainer.skyrimPluginEditor.FileBackup; }
         public bool GetSkyrimPluginEditor_SafetyMode() { return configContainer.skyrimPluginEditor.SafetyMode; }
         public double GetFileManager_Height() { return configContainer.fileManager.Height; }
         public double GetFileManager_Width() { return configContainer.fileManager.Width; }
@@ -131,6 +125,10 @@ namespace SkyrimPluginTextEditor
         public bool GetFileManager_FileOverwrite() { return configContainer.fileManager.FileOverwrite; }
         public bool GetFileManager_ClearEmptySubFolder() { return configContainer.fileManager.ClearEmptySubFolder; }
         public bool GetFileManager_NonSkyrimFile() { return configContainer.fileManager.NonSkyrimFile; }
+        public double GetNifManager_Height() { return configContainer.nifManager.Height; }
+        public double GetNifManager_Width() { return configContainer.nifManager.Width; }
+        public bool GetNifManager_MatchCase() { return configContainer.nifManager.MatchCase; }
+        public bool GetNifManager_FileBackup() { return configContainer.nifManager.FileBackup; }
 
         public void SetLogLevel(Logger.LogLevel logLevel)
         {
@@ -157,6 +155,7 @@ namespace SkyrimPluginTextEditor
             ConfigWrite();
         }
         public void SetSkyrimPluginEditor_MatchCase(bool active) { configContainer.skyrimPluginEditor.MatchCase = active; ConfigWrite(); }
+        public void SetSkyrimPluginEditor_FileBackup(bool active) { configContainer.skyrimPluginEditor.FileBackup = active; ConfigWrite(); }
         public void SetSkyrimPluginEditor_SafetyMode(bool active) { configContainer.skyrimPluginEditor.SafetyMode = active; ConfigWrite(); }
         public void SetFileManager_Size(double Height, double Width)
         {
@@ -169,6 +168,16 @@ namespace SkyrimPluginTextEditor
         public void SetFileManager_FileOverwrite(bool active) { configContainer.fileManager.FileOverwrite = active; ConfigWrite(); }
         public void SetFileManager_ClearEmptySubFolder(bool active) { configContainer.fileManager.ClearEmptySubFolder = active; ConfigWrite(); }
         public void SetFileManager_NonSkyrimFile(bool active) { configContainer.fileManager.NonSkyrimFile = active; ConfigWrite(); }
+
+        public void SetNifManager_Size(double Height, double Width)
+        {
+            configContainer.nifManager.Height = Height;
+            configContainer.nifManager.Width = Width;
+            ConfigWrite();
+        }
+        public void SetNifManager_MatchCase(bool active) { configContainer.nifManager.MatchCase = active; ConfigWrite(); }
+        public void SetNifManager_FileBackup(bool active) { configContainer.nifManager.FileBackup = active; ConfigWrite(); }
+
 
         public Dictionary<string, List<string>> GetEditableType() { return typeDictionary.EditableType; }
         public bool IsEditableType(string recordSig, string sig)
@@ -217,6 +226,7 @@ namespace SkyrimPluginTextEditor
                 public double Height = 800;
                 public double Width = 1200;
                 public bool MatchCase = false;
+                public bool FileBackup = true;
                 public bool SafetyMode = false;
             }
             public SkyrimPluginEditor skyrimPluginEditor = new SkyrimPluginEditor();
@@ -232,6 +242,15 @@ namespace SkyrimPluginTextEditor
                 public bool NonSkyrimFile = false;
             }
             public FileManager fileManager = new FileManager();
+
+            public class NifManager
+            {
+                public double Height = 550;
+                public double Width = 900;
+                public bool MatchCase = false;
+                public bool FileBackup = true;
+            }
+            public NifManager nifManager = new NifManager();
         }
         private ConfigContainer configContainer = new ConfigContainer();
         public class TypeDictionary
