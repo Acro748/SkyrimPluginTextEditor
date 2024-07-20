@@ -14,6 +14,8 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using static SkyrimPluginTextEditor.MainWindow;
 
+#pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
+
 namespace SkyrimPluginTextEditor
 {
     /// <summary>
@@ -98,6 +100,7 @@ namespace SkyrimPluginTextEditor
             LV_NifDataList_Active(false);
             LV_BlockNameList_Active(false);
             LV_StringTypeList_Active(false);
+            MI_Macro_Active(false);
             ProgressBarInitial();
             double mainStep = ProgressBarMaximum() / stepSub;
             double step = mainStep / meshes.Count;
@@ -141,7 +144,9 @@ namespace SkyrimPluginTextEditor
             LV_NifDataList_Active();
 
             InitialCategories();
+
             ProgressBarDone();
+            MI_Macro_Active();
         }
 
         NifLoadOptions loadOptions = new NifLoadOptions() { isTerrain = false };
@@ -388,14 +393,14 @@ namespace SkyrimPluginTextEditor
                 PB_Loading.Maximum = ProgressBarMax;
             }));
         }
-        private void ProgressBarStep(double step = 1)
+        private async void ProgressBarStep(double step = 1)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 ProgressBarValue += step;
                 PB_Loading.Value = ProgressBarValue;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -586,6 +591,19 @@ namespace SkyrimPluginTextEditor
 
             BT_Apply_Update();
             MI_Save_Active();
+            ApplyActiveDelay();
+        }
+        private async void ApplyActiveDelay()
+        {
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                BT_Apply.IsEnabled = false;
+            }));
+            await Task.Delay(500);
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                BT_Apply.IsEnabled = true;
+            }));
         }
 
         private void ApplyNifFile(NifData data)
@@ -637,6 +655,7 @@ namespace SkyrimPluginTextEditor
             LV_BlockNameList_Active(false);
             MI_Reset_Active(false);
             MI_Save_Active(false);
+            MI_Macro_Active(false);
             MacroMode = true;
 
             foreach (var line in System.IO.File.ReadLines(file))
@@ -838,6 +857,7 @@ namespace SkyrimPluginTextEditor
             LV_StringTypeList_Active();
             MI_Reset_Active();
             MI_Save_Active();
+            MI_Macro_Active();
 
             MacroMode = false;
             if (endClose && isSave)
@@ -846,25 +866,23 @@ namespace SkyrimPluginTextEditor
                 System.Windows.MessageBox.Show("Macro loaded");
         }
 
-        private void CB_MatchCase_Update()
+        private async void CB_MatchCase_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 CB_MatchCase.DataContext = matchCase;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
         }
-        private void CB_FacegenEdit_Update()
+        private async void CB_FacegenEdit_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 MI_FaceGenEdit.DataContext = FacegenEdit;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
         }
-        private void LV_BlockNameList_Update(bool binding = false)
+        private async void LV_BlockNameList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -876,7 +894,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_BlockNameList_Active(bool Active = true)
         {
@@ -885,9 +903,9 @@ namespace SkyrimPluginTextEditor
                 LV_BlockNameList.IsEnabled = Active;
             }));
         }
-        private void LV_StringTypeList_Update(bool binding = false)
+        private async void LV_StringTypeList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -899,7 +917,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_StringTypeList_Active(bool Active = true)
         {
@@ -909,9 +927,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private void LV_NifDataList_Update(bool binding = false)
+        private async void LV_NifDataList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -924,7 +942,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_NifDataList_Active(bool Active = true)
         {

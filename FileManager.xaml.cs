@@ -11,6 +11,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
+#pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
+
 namespace SkyrimPluginTextEditor
 {
     /// <summary>
@@ -230,6 +232,19 @@ namespace SkyrimPluginTextEditor
             BT_Apply_Update();
             MI_Reset_Active();
             MI_Save_Active();
+            ApplyActiveDelay();
+        }
+        private async void ApplyActiveDelay()
+        {
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                BT_Apply.IsEnabled = false;
+            }));
+            await Task.Delay(500);
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                BT_Apply.IsEnabled = true;
+            }));
         }
 
         private void LV_FileList_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -270,14 +285,14 @@ namespace SkyrimPluginTextEditor
                 PB_Loading.Maximum = ProgressBarMax;
             }));
         }
-        private void ProgressBarStep(double step = 1)
+        private async void ProgressBarStep(double step = 1)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 ProgressBarValue += step;
                 PB_Loading.Value = ProgressBarValue;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -351,30 +366,28 @@ namespace SkyrimPluginTextEditor
             GVC_Extensions.Width = GVC_Extensions.Width * Ratio;
         }
 
-        private void CB_FileContent_Update()
+        private async void CB_FileContent_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 CB_FileContent.DataContext = fileContent;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
         }
-        private void MI_NonSkyrimFile_Update()
+        private async void MI_NonSkyrimFile_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 MI_NonSkyrimFile.DataContext = nonSkyrimFile;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
         }
-        private void BT_Apply_Active(bool Active = true)
+        private async void BT_Apply_Active(bool Active = true)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 BT_Apply.IsEnabled = Active;
             }));
         }
-        private void BT_Apply_Update()
+        private async void BT_Apply_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
@@ -392,9 +405,9 @@ namespace SkyrimPluginTextEditor
                 BT_Apply.IsEnabled = false;
             }));
         }
-        private void LV_FileList_Update(bool binding = false)
+        private async void LV_FileList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -407,7 +420,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FileList_Active(bool Active = true)
         {
@@ -418,9 +431,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private void LV_ExtensionList_Update(bool binding = false)
+        private async void LV_ExtensionList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -433,7 +446,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ExtensionList_Active(bool Active = true)
         {
@@ -891,6 +904,7 @@ namespace SkyrimPluginTextEditor
             LV_FileList_Active(false);
             MI_Reset_Active(false);
             MI_Save_Active(false);
+            MI_Macro_Active(false);
             MacroMode = true;
 
             foreach (var line in File.ReadLines(file))
@@ -1059,6 +1073,7 @@ namespace SkyrimPluginTextEditor
             LV_FileList_Active();
             MI_Reset_Active();
             MI_Save_Active();
+            MI_Macro_Active();
 
             if (isNifEdit && !endClose)
             {

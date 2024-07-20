@@ -477,14 +477,14 @@ namespace SkyrimPluginTextEditor
                 PB_Loading.Maximum = ProgressBarMax;
             }));
         }
-        private void ProgressBarStep(double step = 1)
+        private async void ProgressBarStep(double step = 1)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 ProgressBarValue += step;
                 PB_Loading.Value = ProgressBarValue;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -580,7 +580,7 @@ namespace SkyrimPluginTextEditor
                 BT_Apply.IsEnabled = Active;
             }));
         }
-        private void BT_Apply_Update()
+        private async void BT_Apply_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
@@ -687,6 +687,19 @@ namespace SkyrimPluginTextEditor
 
             BT_Apply_Update();
             MI_Save_Active();
+            ApplyActiveDelay();
+        }
+        private async void ApplyActiveDelay()
+        {
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                BT_Apply.IsEnabled = false;
+            }));
+            await Task.Delay(500);
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                BT_Apply.IsEnabled = true;
+            }));
         }
 
         private void LV_ConvertList_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -928,7 +941,7 @@ namespace SkyrimPluginTextEditor
             LV_ConvertList_Active(true);
         }
 
-        private void CB_MasterPluginBefore_Update(bool binding = false)
+        private async void CB_MasterPluginBefore_Update(bool binding = false)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
@@ -952,17 +965,16 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private void CB_MatchCase_Update()
+        private async void CB_MatchCase_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 CB_MatchCase.DataContext = matchCase;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
         }
-        private void LV_PluginList_Update(bool binding = false)
+        private async void LV_PluginList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -978,7 +990,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_PluginList_Active(bool Active = true)
         {
@@ -987,9 +999,9 @@ namespace SkyrimPluginTextEditor
                 LV_PluginList.IsEnabled = Active;
             }));
         }
-        private void LV_FragmentList_Update(bool binding = false)
+        private async void LV_FragmentList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -1001,7 +1013,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FragmentList_Active(bool Active = true)
         {
@@ -1011,9 +1023,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private void LV_ConvertList_Update(bool binding = false)
+        private async void LV_ConvertList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -1026,7 +1038,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ConvertList_Active(bool Active = true)
         {
