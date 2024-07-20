@@ -1,5 +1,4 @@
-﻿using log4net.Core;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -217,14 +216,14 @@ namespace SkyrimPluginTextEditor
             masterPluginList.Add(new MasterPluginField() { MasterPluginName = "None", MasterPluginNameOrig = "None" });
             ConcurrentDictionary<string, MasterPluginField> newMasterPluginList = new ConcurrentDictionary<string, MasterPluginField>();
             ulong dataIndex = 0;
-            Parallel.ForEach(pluginDatas, plugin =>
+            Parallel.ForEach (pluginDatas, plugin =>
             {
                 ConcurrentBag<DataEditField> newDataEditFields = new ConcurrentBag<DataEditField>();
                 var list = plugin.Value.GetEditableListOfRecord();
                 double miniStep = step / (list.Count == 0 ? 1 : list.Count);
                 if (list.Count > 0)
                 {
-                    foreach (var item in list)
+                    Parallel.ForEach(list, item =>
                     {
                         var newPlugin = new PluginListData()
                         {
@@ -272,7 +271,7 @@ namespace SkyrimPluginTextEditor
                         });
 
                         ProgressBarStep(miniStep);
-                    }
+                    });
                 }
                 else
                     ProgressBarStep(step);
@@ -318,6 +317,7 @@ namespace SkyrimPluginTextEditor
                 }
                 return result;
             });
+            LV_PluginList_Update();
             ProgressBarStep(step);
 
             fragmentList.Sort((x, y) => { return x.FragmentType.CompareTo(y.FragmentType); });
@@ -334,9 +334,11 @@ namespace SkyrimPluginTextEditor
                     itemX.FromRecoredsToolTip += itemY.Key;
                 }
             }
+            LV_FragmentList_Update();
             ProgressBarStep(step);
 
             DataEditFieldSort();
+            LV_ConvertList_Update();
             ProgressBarStep(step);
 
             LV_PluginList_Update();
@@ -371,9 +373,9 @@ namespace SkyrimPluginTextEditor
             MI_NifManager_Active();
         }
 
-        double ProgressBarMax = 10000;
+        double ProgressBarMax = 100000000;
         double ProgressBarValue = 0;
-        private void ProgressBarInitial(double Maximum = 10000)
+        private void ProgressBarInitial(double Maximum = 100000000)
         {
             ProgressBarValue = 0;
             ProgressBarMax = Maximum;
@@ -384,14 +386,22 @@ namespace SkyrimPluginTextEditor
                 PB_Loading.Maximum = ProgressBarMax;
             }));
         }
-        private async void ProgressBarStep(double step = 1)
+        object progressLock = new object();
+        private void ProgressBarStep(double step = 1)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            lock (progressLock)
             {
                 ProgressBarValue += step;
+            }
+            ProgressBarUpdate();
+        }
+        private async void ProgressBarUpdate()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
                 PB_Loading.Value = ProgressBarValue;
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -862,12 +872,7 @@ namespace SkyrimPluginTextEditor
         }
         private void DataEditFieldSort()
         {
-            dataEditFields.Sort((x, y) => { 
-                int result = x.PluginPath.CompareTo(y.PluginPath);
-                if (result == 0)
-                    result = x.Index.CompareTo(y.Index);
-                return result;
-            });
+            dataEditFields.Sort((x, y) => x.Index.CompareTo(y.Index));
         }
 
         private async void CB_MasterPluginBefore_Update(bool binding = false)
@@ -896,7 +901,7 @@ namespace SkyrimPluginTextEditor
 
         private async void LV_PluginList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -912,7 +917,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_PluginList_Active(bool Active = true)
         {
@@ -923,7 +928,7 @@ namespace SkyrimPluginTextEditor
         }
         private async void LV_FragmentList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -935,7 +940,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FragmentList_Active(bool Active = true)
         {
@@ -947,7 +952,7 @@ namespace SkyrimPluginTextEditor
 
         private async void LV_ConvertList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -960,7 +965,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ConvertList_Active(bool Active = true)
         {
@@ -1599,7 +1604,6 @@ namespace SkyrimPluginTextEditor
                     MI_Save_Click(sender, e);
                     isSave = true;
                 }
-                Task.Delay(100);
             }
             if (!isSave)
             {

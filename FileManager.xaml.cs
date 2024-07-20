@@ -132,7 +132,7 @@ namespace SkyrimPluginTextEditor
                 }
             }
         }
-        private async void GetFiles()
+        private void GetFiles()
         {
             isContentEdited = false;
 
@@ -146,7 +146,7 @@ namespace SkyrimPluginTextEditor
             nonSkyrimFiles.Clear();
             filesEdited.Clear();
 
-            foreach (var folder in selectedFolders)
+            Parallel.ForEach(selectedFolders, folder =>
             {
                 if (Directory.Exists(folder))
                 {
@@ -154,17 +154,18 @@ namespace SkyrimPluginTextEditor
                     if (filesInDirectory.Length > 0)
                     {
                         double fileStep = step / filesInDirectory.Length;
-                        foreach (var path in filesInDirectory)
+                        Parallel.ForEach(filesInDirectory, path =>
                         {
                             GetFile(path, tmpLock);
                             ProgressBarStep(fileStep);
-                        }
+                        });
                     }
                     else
                         ProgressBarStep(step);
                 }
-            }
-            ProgressBarDone();
+            });
+            LV_FileList_Update();
+            LV_ExtensionList_Update();
 
             LV_FileList_Sort();
             extensionList.Sort((x, y) => { return x.FileExtension.CompareTo(y.FileExtension); });
@@ -172,6 +173,8 @@ namespace SkyrimPluginTextEditor
             LV_ExtensionList_Update();
             LV_FileList_Active();
             LV_ExtensionList_Active();
+
+            ProgressBarDone();
         }
         private void LV_FileList_Sort()
         {
@@ -289,9 +292,9 @@ namespace SkyrimPluginTextEditor
             scrollViewer2.ScrollToHorizontalOffset(scrollViewer1.HorizontalOffset);
         }
 
-        double ProgressBarMax = 10000;
+        double ProgressBarMax = 100000000;
         double ProgressBarValue = 0;
-        private void ProgressBarInitial(double Maximum = 10000)
+        private void ProgressBarInitial(double Maximum = 100000000)
         {
             ProgressBarValue = 0;
             ProgressBarMax = Maximum;
@@ -302,14 +305,22 @@ namespace SkyrimPluginTextEditor
                 PB_Loading.Maximum = ProgressBarMax;
             }));
         }
-        private async void ProgressBarStep(double step = 1)
+        object progressLock = new object();
+        private void ProgressBarStep(double step = 1)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            lock (progressLock)
             {
                 ProgressBarValue += step;
+            }
+            ProgressBarUpdate();
+        }
+        private async void ProgressBarUpdate()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
                 PB_Loading.Value = ProgressBarValue;
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -410,7 +421,7 @@ namespace SkyrimPluginTextEditor
         }
         private async void LV_FileList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -423,7 +434,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FileList_Active(bool Active = true)
         {
@@ -436,7 +447,7 @@ namespace SkyrimPluginTextEditor
 
         private async void LV_ExtensionList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -449,7 +460,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ExtensionList_Active(bool Active = true)
         {

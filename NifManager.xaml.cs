@@ -102,6 +102,7 @@ namespace SkyrimPluginTextEditor
             LV_StringTypeList_Active(false);
             MI_Macro_Active(false);
             ProgressBarInitial();
+
             double mainStep = ProgressBarMaximum() / stepSub;
             double step = mainStep / meshes.Count;
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
@@ -115,6 +116,7 @@ namespace SkyrimPluginTextEditor
                     failFiles.Add(mesh);
                 }
                 ProgressBarStep(step);
+                LV_NifDataList_Update();
             });
             ConcurrentBag<NifData> newNifDatas_Facegen = new ConcurrentBag<NifData>();
             Parallel.ForEach(newNifDatas, data =>
@@ -124,6 +126,7 @@ namespace SkyrimPluginTextEditor
             });
             nifDatas_Facegen.AddRange(newNifDatas_Facegen);
             nifDatas.AddRange(newNifDatas.Except(newNifDatas_Facegen));
+            LV_NifDataList_Update();
 
             if (failFiles.Count > 0)
             {
@@ -380,9 +383,9 @@ namespace SkyrimPluginTextEditor
             Config.GetSingleton.SetNifManager_Size(this.Height, this.Width);
         }
 
-        double ProgressBarMax = 10000;
+        double ProgressBarMax = 100000000;
         double ProgressBarValue = 0;
-        private void ProgressBarInitial(double Maximum = 10000)
+        private void ProgressBarInitial(double Maximum = 100000000)
         {
             ProgressBarValue = 0;
             ProgressBarMax = Maximum;
@@ -393,14 +396,22 @@ namespace SkyrimPluginTextEditor
                 PB_Loading.Maximum = ProgressBarMax;
             }));
         }
-        private async void ProgressBarStep(double step = 1)
+        object progressLock = new object();
+        private void ProgressBarStep(double step = 1)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            lock (progressLock)
             {
                 ProgressBarValue += step;
+            }
+            ProgressBarUpdate();
+        }
+        private async void ProgressBarUpdate()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            {
                 PB_Loading.Value = ProgressBarValue;
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -820,7 +831,6 @@ namespace SkyrimPluginTextEditor
                     MI_Save_Click(sender, e);
                     isSave = true;
                 }
-                Task.Delay(100);
             }
 
             if (!isSave)
@@ -848,7 +858,7 @@ namespace SkyrimPluginTextEditor
 
         private async void LV_BlockNameList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -860,7 +870,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_BlockNameList_Active(bool Active = true)
         {
@@ -871,7 +881,7 @@ namespace SkyrimPluginTextEditor
         }
         private async void LV_StringTypeList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -883,7 +893,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_StringTypeList_Active(bool Active = true)
         {
@@ -895,7 +905,7 @@ namespace SkyrimPluginTextEditor
 
         private async void LV_NifDataList_Update(bool binding = false)
         {
-            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -908,7 +918,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            await Task.Delay(TimeSpan.FromTicks(1));
+            Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_NifDataList_Active(bool Active = true)
         {
