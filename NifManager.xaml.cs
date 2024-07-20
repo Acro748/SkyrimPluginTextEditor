@@ -1,5 +1,4 @@
-﻿using log4net.Plugin;
-using nifly;
+﻿using nifly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -41,7 +40,7 @@ namespace SkyrimPluginTextEditor
         private bool initialDone = false;
         private double stepSub = 3;
 
-        public NifManager(List<string> folders)
+        public NifManager()
         {
             InitializeComponent();
             for (AddTextType i = 0; i < AddTextType.End; i++)
@@ -57,8 +56,6 @@ namespace SkyrimPluginTextEditor
             CB_MatchCase.DataContext = matchCase;
             MI_FileBackup.DataContext = fileBackup;
             MI_FaceGenEdit.DataContext = FacegenEdit;
-
-            UpdateNifList(folders);
 
             initialDone = true;
         }
@@ -78,7 +75,7 @@ namespace SkyrimPluginTextEditor
             }
             return newMeshes;
         }
-        public void UpdateNifList(List<string> folders)
+        public void LoadNifFiles(List<string> folders)
         {
             selectedFolders = folders;
             meshes = GetNifFiles();

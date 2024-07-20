@@ -119,7 +119,9 @@ namespace SkyrimPluginTextEditor
             }
 
             if (App.fileManager != null && App.fileManager.IsLoaded)
-                App.fileManager.UpdateFolderList(selectedFolders);
+                App.fileManager.LoadFolderList(selectedFolders);
+            if (App.nifManager != null && App.nifManager.IsLoaded)
+                App.nifManager.LoadNifFiles(selectedFolders);
         }
         private void MI_OpenFolder_Active(bool Active = true)
         {
@@ -1053,8 +1055,9 @@ namespace SkyrimPluginTextEditor
         {
             if (App.fileManager != null && App.fileManager.IsLoaded)
                 return;
-            App.fileManager = new FileManager(selectedFolders);
-            App.fileManager.Show();
+            App.fileManager = new FileManager();
+            App.fileManager.Show(); 
+            App.fileManager.LoadFolderList(selectedFolders);
         }
         private void MI_FileManager_Active(bool Active = true)
         {
@@ -1641,22 +1644,14 @@ namespace SkyrimPluginTextEditor
 
             if (isFileEdit)
             {
-                App.fileManager = new FileManager(selectedFolders);
-                //App.fileManager.Show();
-                while(!App.fileManager.IsInitialDone())
-                {
-                    Task.Delay(100);
-                }
+                App.fileManager = new FileManager();
                 App.fileManager.Macro_Load(sender, e, file, !App.fileManager.IsLoaded);
+                App.fileManager.LoadFolderList(selectedFolders);
             }
             if (isNifEdit)
             {
-                App.nifManager = new NifManager(selectedFolders);
-                //App.nifManager.Show();
-                while (!App.nifManager.IsInitialDone())
-                {
-                    Task.Delay(100);
-                }
+                App.nifManager = new NifManager();
+                App.nifManager.LoadNifFiles(selectedFolders);
                 App.nifManager.Macro_Load(sender, e, file, !App.nifManager.IsLoaded);
             }
 
@@ -1698,8 +1693,9 @@ namespace SkyrimPluginTextEditor
         {
             if (App.nifManager != null && App.nifManager.IsLoaded)
                 return;
-            App.nifManager = new NifManager(selectedFolders);
+            App.nifManager = new NifManager();
             App.nifManager.Show();
+            App.nifManager.LoadNifFiles(selectedFolders);
         }
     }
 

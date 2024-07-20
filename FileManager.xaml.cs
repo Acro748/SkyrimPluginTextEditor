@@ -37,7 +37,7 @@ namespace SkyrimPluginTextEditor
         private CheckBoxBinder nonSkyrimFileCheck = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile() };
         private bool MacroMode = false;
 
-        public FileManager(List<string> folders)
+        public FileManager()
         {
             InitializeComponent();
             SizeChangeAll(Config.GetSingleton.GetFileManager_Width() / this.Width);
@@ -50,12 +50,11 @@ namespace SkyrimPluginTextEditor
             MI_FileOverwrite.DataContext = fileOverwrite;
             MI_ClearSubFolder.DataContext = clearSubFolder;
             MI_NonSkyrimFile.DataContext = nonSkyrimFileCheck;
-            UpdateFolderList(folders);
 
             initialDone = true;
         }
 
-        public void UpdateFolderList(List<string> folders)
+        public void LoadFolderList(List<string> folders)
         {
             selectedFolders = folders;
             LV_FileList_Update(true);
@@ -1114,12 +1113,8 @@ namespace SkyrimPluginTextEditor
 
             if (isNifEdit && !endClose)
             {
-                App.nifManager = new NifManager(selectedFolders);
-                App.nifManager.Show();
-                while (!App.nifManager.IsInitialDone())
-                {
-                    Task.Delay(100);
-                }
+                App.nifManager = new NifManager();
+                App.nifManager.LoadNifFiles(selectedFolders);
                 App.nifManager.Macro_Load(sender, e, file, !App.nifManager.IsLoaded);
             }
 
@@ -1135,8 +1130,9 @@ namespace SkyrimPluginTextEditor
         {
             if (App.nifManager != null && App.nifManager.IsLoaded)
                 return;
-            App.nifManager = new NifManager(selectedFolders);
+            App.nifManager = new NifManager();
             App.nifManager.Show();
+            App.nifManager.LoadNifFiles(selectedFolders);
         }
     }
     public class FileContent : INotifyPropertyChanged
