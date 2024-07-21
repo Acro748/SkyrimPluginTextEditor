@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using static SkyrimPluginTextEditor.MainWindow;
 
@@ -43,6 +44,9 @@ namespace SkyrimPluginTextEditor
         public NifManager()
         {
             InitializeComponent();
+            LV_NifDataList_Update(true);
+            LV_BlockNameList_Update(true);
+            LV_StringTypeList_Update(true);
             for (AddTextType i = 0; i < AddTextType.End; i++)
             {
                 CB_AddTextType.Items.Add(i);
@@ -59,35 +63,47 @@ namespace SkyrimPluginTextEditor
 
             initialDone = true;
         }
-        private List<string> GetNifFiles()
+        private List<string> GetNifFiles(List<string> FileOrFolder)
         {
             List<string> newMeshes = new List<string>();
-            foreach (var folder in selectedFolders)
+            foreach (var fof in FileOrFolder)
             {
-                if (Directory.Exists(folder))
+                if (Directory.Exists(fof))
                 {
-                    var filesInDirectory = Directory.GetFiles(folder, "*.nif", SearchOption.AllDirectories);
+                    var filesInDirectory = Directory.GetFiles(fof, "*.nif", SearchOption.AllDirectories);
                     foreach (var path in filesInDirectory)
                     {
                         newMeshes.Add(path);
                     }
                 }
+                else if (File.Exists(fof))
+                {
+                    if (Util.IsNifFile(fof))
+                        newMeshes.Add(fof);
+                }
             }
             return newMeshes;
         }
-        public void LoadNifFiles(List<string> folders)
+        public void LoadNifFilesFromFolders(List<string> folders)
         {
             selectedFolders = folders;
-            meshes = GetNifFiles();
-            LV_NifDataList_Update(true);
-            LV_BlockNameList_Update(true);
-            LV_StringTypeList_Update(true);
+            meshes = GetNifFiles(selectedFolders);
+            LoadNifFiles();
+        }
+        public void LoadNifFiles(List<string> files)
+        {
+            selectedFolders.Clear();
+            meshes = GetNifFiles(files);
             LoadNifFiles();
         }
 
         public bool IsInitialDone() { return initialDone; }
 
         private void LoadNifFiles()
+        {
+            Task.Run(() => LoadNifFiles_Impl());
+        }
+        private void LoadNifFiles_Impl()
         {
             nifDatas.Clear();
             nifDatas_Facegen.Clear();
@@ -105,7 +121,7 @@ namespace SkyrimPluginTextEditor
             double step = mainStep / meshes.Count;
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             ConcurrentBag<NifData> newNifDatas = new ConcurrentBag<NifData>();
-            Parallel.ForEach(meshes, mesh =>
+            Parallel.ForEach(meshes, async mesh =>
             {
                 Logger.Log.Info("reading " + mesh + " file...");
                 if (!LoadNifFile(newNifDatas, mesh))
@@ -116,7 +132,7 @@ namespace SkyrimPluginTextEditor
                 ProgressBarStep(step);
             });
             ConcurrentBag<NifData> newNifDatas_Facegen = new ConcurrentBag<NifData>();
-            Parallel.ForEach(newNifDatas, data =>
+            Parallel.ForEach(newNifDatas, async data =>
             {
                 if (data.isFacegenMesh)
                     newNifDatas_Facegen.Add(data);
@@ -451,6 +467,10 @@ namespace SkyrimPluginTextEditor
         }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
         {
+            Save();
+        }
+        private void Save()
+        {
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(editedNifDatas, nif =>
             {
@@ -684,9 +704,9 @@ namespace SkyrimPluginTextEditor
             string file = Util.GetMacroFile();
             if (file == "")
                 return;
-            Macro_Load(sender, e, file, false);
+            Macro_Load(file, false);
         }
-        public void Macro_Load(object sender, RoutedEventArgs e, string file, bool endClose)
+        public void Macro_Load(string file, bool endClose)
         {
             bool isFileEdit = false;
             bool isSave = false;
@@ -818,12 +838,12 @@ namespace SkyrimPluginTextEditor
                         if (m3 == "CHECK")
                         {
                             FacegenEdit.IsChecked = true;
-                            MI_FacegenEdit_CheckUncheck(sender, e);
+                            MI_FacegenEdit_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                         else if (m3 == "UNCHECK")
                         {
                             FacegenEdit.IsChecked = false;
-                            MI_FacegenEdit_CheckUncheck(sender, e);
+                            MI_FacegenEdit_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                     }
                 }
@@ -852,7 +872,7 @@ namespace SkyrimPluginTextEditor
                 }
                 else if (m1 == "SAVE")
                 {
-                    MI_Save_Click(sender, e);
+                    Save();
                     isSave = true;
                 }
             }
@@ -1463,6 +1483,46 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
+        private void FileOrFolderDrop(object sender, DragEventArgs e)
+        {
+            if (e == null)
+                return;
+            string[] FileOrFolder = e.Data.GetData(DataFormats.FileDrop) as string[];
+            e.Handled = true;
+
+            foreach (var macro in FileOrFolder.ToList().FindAll(x => Util.IsMacroFile(x) && File.Exists(x)))
+            {
+                if (System.Windows.MessageBox.Show("Do you want to load the macro file?\n" + System.IO.Path.GetFileName(macro),
+                    "Macro Load", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    Macro_Load(macro, false);
+            }
+
+            bool isUpdateFileList = false;
+            var folders = FileOrFolder.ToList().FindAll(x => Directory.Exists(x));
+            if (folders.Count > 0)
+            {
+                selectedFolders = folders;
+                meshes = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.AllDirectories).FindAll(x => Util.IsNifFile(x));
+                isUpdateFileList = true;
+            }
+            var files = FileOrFolder.ToList().FindAll(x => File.Exists(x) && Util.IsNifFile(x));
+            if (files.Count > 0)
+            {
+                if (isUpdateFileList)
+                {
+                    meshes.AddRange(files);
+                }
+                else
+                {
+                    selectedFolders.Clear();
+                    meshes = files;
+                }
+                isUpdateFileList = true;
+            }
+
+            if (isUpdateFileList)
+                LoadNifFiles();
+        }
     }
     public class NifDataToggleData
     {

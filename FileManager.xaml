@@ -8,7 +8,9 @@
         Title="FileManager" Height="550" Width="900"
         ResizeMode="CanResizeWithGrip"
         MinHeight="350" MinWidth="450"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        AllowDrop="True"
+        PreviewDrop="FileOrFolderDrop">
     <Window.Resources>
         <Style TargetType="{x:Type ListViewItem}">
             <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
@@ -43,7 +45,7 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid AllowDrop="True" PreviewDrop="FileOrFolderDrop">
         <Grid.RowDefinitions>
             <RowDefinition Height="20"/>
             <RowDefinition Height="1*"/>

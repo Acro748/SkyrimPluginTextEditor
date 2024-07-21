@@ -26,7 +26,7 @@ namespace SkyrimPluginTextEditor
     public partial class MainWindow : Window
     {
         private List<string> selectedFolders = new List<string>();
-        public List<string> GetSelectedFolders() { return selectedFolders; }
+        private List<string> selectedFiles = new List<string>();
         private Dictionary<string, PluginFile> pluginDatas = new Dictionary<string, PluginFile>(); //fullpath, plugindata
         private List<PluginListData> pluginList = new List<PluginListData>();
         private List<FragmentTypeData> fragmentList = new List<FragmentTypeData>();
@@ -106,8 +106,8 @@ namespace SkyrimPluginTextEditor
                 Logger.Log.Info("Selected Folder : " + folder);
             }
 
-
-            Task.Run(async () => SetPluginListView());
+            selectedFiles = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.TopDirectoryOnly).FindAll(x => Util.IsPluginFIle(x));
+            SetPluginListView();
 
             if (selectedFolders.Count == 1)
                 Config.GetSingleton.SetDefaultPath(selectedFolders.First());
@@ -155,10 +155,14 @@ namespace SkyrimPluginTextEditor
 
         public void SetPluginListView()
         {
+            Task.Run(() => SetPluginListView_Impl());
+        }
+        public void SetPluginListView_Impl()
+        {
             ProgressBarInitial();
 
             double baseStep = ProgressBarMaximum() / 5;
-            double step = baseStep / selectedFolders.Count;
+            double step = baseStep / selectedFiles.Count;
 
             masterPluginList.Clear();
             pluginList.Clear();
@@ -181,35 +185,38 @@ namespace SkyrimPluginTextEditor
             MI_OpenFolder_Active(false);
 
             pluginDatas.Clear();
-            Dictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new Dictionary<string, PluginStreamBase._ErrorCode>();
+            ConcurrentDictionary<string, PluginFile> pluginDatasTemp = new ConcurrentDictionary<string, PluginFile>();
+            ConcurrentDictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new ConcurrentDictionary<string, PluginStreamBase._ErrorCode>();
             object fileLock = new object();
-            Parallel.ForEach(selectedFolders, async folder =>
+            Parallel.ForEach(selectedFiles, async path =>
             {
-                if (Directory.Exists(folder))
+                if (File.Exists(path))
                 {
-                    var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
-                    if (filesInDirectory.Length > 0)
+                    PluginStreamBase._ErrorCode errorCode = PluginStreamBase._ErrorCode.Passed;
+                    string fileName = System.IO.Path.GetFileName(path);
+                    if (Util.IsPluginFIle(fileName))
                     {
-                        double fileStep = step / filesInDirectory.Length;
-                        Parallel.ForEach(filesInDirectory, path =>
+                        PluginFile pm = new PluginFile(path);
+                        errorCode = pm.Read();
+                        if (errorCode >= 0)
                         {
-                            PluginStreamBase._ErrorCode errorCode = GetFile(path, fileLock);
-                            if (errorCode < 0 && -20 < (int)errorCode)
-                            {
-                                string fileName = System.IO.Path.GetFileName(path);
-                                lock (fileLock)
-                                {
-                                    wrongPlugins.Add(fileName, errorCode);
-                                }
-                            }
-
-                            ProgressBarStep(fileStep);
-                        });
+                            Logger.Log.Info(errorCode + " : " + path);
+                            pluginDatasTemp.AddOrUpdate(path, pm, (key, oldValue) => pm);
+                        }
+                        else if ((Int16)errorCode <= -20)
+                            Logger.Log.Warn(errorCode + " : " + path);
+                        else
+                            Logger.Log.Error(errorCode + " : " + path);
                     }
-                    else
-                        ProgressBarStep(step);
+
+                    if (errorCode < 0 && -20 < (int)errorCode)
+                    {
+                        wrongPlugins.AddOrUpdate(fileName, errorCode, (key, oldValue) => errorCode);
+                    }
                 }
+                ProgressBarStep(step);
             });
+            pluginDatas = pluginDatasTemp.ToDictionary();
 
             step = baseStep / (pluginDatas.Count == 0 ? 1 : pluginDatas.Count) * 3;
 
@@ -220,7 +227,7 @@ namespace SkyrimPluginTextEditor
             ConcurrentDictionary<string, MasterPluginField> newMasterPluginList = new ConcurrentDictionary<string, MasterPluginField>();
             ConcurrentBag<DataEditField> newDataEditFields = new ConcurrentBag<DataEditField>(); 
             ulong dataIndex = 0;
-            Parallel.ForEach (pluginDatas, plugin =>
+            Parallel.ForEach (pluginDatas, async plugin =>
             {
                 var list = plugin.Value.GetEditableListOfRecord();
                 double miniStep = step / (list.Count == 0 ? 1 : list.Count);
@@ -262,13 +269,13 @@ namespace SkyrimPluginTextEditor
                             PluginPath = plugin.Value.GetFilePath(),
                             RecordType = item.RecordType,
                             FragmentType = item.FragmentType,
+                            Index = Interlocked.Increment(ref dataIndex),
                             IsChecked = true,
                             IsSelected = false,
                             TextBefore = item.Text,
                             TextAfter = item.Text,
                             TextBeforeDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
                             TextAfterDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
-                            Index = Interlocked.Increment(ref dataIndex),
                             ToolTip = plugin.Value.GetFilePath(),
                             EditableIndex = item.EditableIndex
                         });
@@ -369,6 +376,8 @@ namespace SkyrimPluginTextEditor
             BT_Apply_Update();
             MI_FileManager_Active();
             MI_NifManager_Active();
+
+            Logger.Log.Info("Loaded " + dataEditFields.Count + " from " + selectedFiles.Count + " files");
         }
 
         double ProgressBarMax = 100000000;
@@ -874,7 +883,19 @@ namespace SkyrimPluginTextEditor
         }
         private void DataEditFieldSort()
         {
-            dataEditFields.Sort((x, y) => x.Index.CompareTo(y.Index));
+            dataEditFields.Sort((x, y) =>
+            {
+                int result = x.PluginPath.CompareTo(y.PluginPath);
+                if (result == 0)
+                {
+                    result = x.RecordType.CompareTo(y.RecordType);
+                    if (result == 0)
+                    {
+                        result = x.FragmentType.CompareTo(y.FragmentType);
+                    }
+                }
+                return result;
+            });
         }
 
         private async void CB_MasterPluginBefore_Update(bool binding = false)
@@ -1013,6 +1034,10 @@ namespace SkyrimPluginTextEditor
             }));
         }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
+        {
+            Save();
+        }
+        private void Save()
         {
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(pluginDatas, plugin =>
@@ -1354,6 +1379,12 @@ namespace SkyrimPluginTextEditor
             if (file == "")
                 return;
 
+            
+        }
+        private void Macro_Load(string file)
+        {
+            if (!Util.CanRead(file))
+                return;
             bool isTextEdit = false;
             bool isFileEdit = false;
             bool isNifEdit = false;
@@ -1622,7 +1653,7 @@ namespace SkyrimPluginTextEditor
                 }
                 else if (m1 == "SAVE")
                 {
-                    MI_Save_Click(sender, e);
+                    Save();
                     isSave = true;
                 }
             }
@@ -1645,14 +1676,14 @@ namespace SkyrimPluginTextEditor
             if (isFileEdit)
             {
                 App.fileManager = new FileManager();
-                App.fileManager.Macro_Load(sender, e, file, !App.fileManager.IsLoaded);
+                App.fileManager.Macro_Load(file, !App.fileManager.IsLoaded);
                 App.fileManager.LoadFolderList(selectedFolders);
             }
             if (isNifEdit)
             {
                 App.nifManager = new NifManager();
                 App.nifManager.LoadNifFiles(selectedFolders);
-                App.nifManager.Macro_Load(sender, e, file, !App.nifManager.IsLoaded);
+                App.nifManager.Macro_Load(file, !App.nifManager.IsLoaded);
             }
 
             MacroMode = false;
@@ -1696,6 +1727,47 @@ namespace SkyrimPluginTextEditor
             App.nifManager = new NifManager();
             App.nifManager.Show();
             App.nifManager.LoadNifFiles(selectedFolders);
+        }
+
+        private void FileOrFolderDrop(object sender, DragEventArgs e)
+        {
+            if (e == null)
+                return;
+            string[] FileOrFolder = e.Data.GetData(DataFormats.FileDrop) as string[];
+            e.Handled = true;
+
+            foreach (var macro in FileOrFolder.ToList().FindAll(x => Util.IsMacroFile(x) && File.Exists(x)))
+            {
+                if (System.Windows.MessageBox.Show("Do you want to load the macro file?\n\n" + System.IO.Path.GetFileName(macro),
+                    "Macro Load", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    Macro_Load(macro);
+            }
+
+            bool isUpdateFileList = false;
+            var folders = FileOrFolder.ToList().FindAll(x => Directory.Exists(x));
+            if (folders.Count > 0)
+            {
+                selectedFolders = folders;
+                selectedFiles = Util.GetAllFilesFromFolders(selectedFolders.ToList(), SearchOption.TopDirectoryOnly).FindAll(x => Util.IsPluginFIle(x));
+                isUpdateFileList = true;
+            }
+            var files = FileOrFolder.ToList().FindAll(x => File.Exists(x) && Util.IsPluginFIle(x));
+            if (files.Count > 0)
+            {
+                if (isUpdateFileList)
+                {
+                    selectedFiles.AddRange(files);
+                }
+                else
+                {
+                    selectedFolders.Clear();
+                    selectedFiles = files;
+                }
+                isUpdateFileList = true;
+            }
+
+            if (isUpdateFileList)
+                SetPluginListView();
         }
     }
 
@@ -1878,7 +1950,8 @@ namespace SkyrimPluginTextEditor
         public string TextAfter { get; set; }
         public string TextAfterDisplay { get; set; }
 
-        public UInt64 Index { get; set; }
+        public UInt64 Index = 0;
+
         private string _ToolTip;
         public string ToolTip
         {

@@ -19,6 +19,38 @@ namespace SkyrimPluginTextEditor
             string lowFileName = file.ToLower();
             return lowFileName.EndsWith(".esp") || lowFileName.EndsWith(".esm") || lowFileName.EndsWith(".esl");
         }
+        static public bool IsMacroFile(string file)
+        {
+            if (IsValidPath(file) != '0')
+                return false;
+            string lowFileName = file.ToLower();
+            return lowFileName.EndsWith(".spt") || lowFileName.EndsWith(".txt");
+        }
+        static public bool IsNifFile(string file)
+        {
+            if (IsValidPath(file) != '0')
+                return false;
+            return file.EndsWith(".nif", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        static public List<string> GetAllFilesFromFolder(string folder, SearchOption option)
+        {
+            if (Directory.Exists(folder))
+            {
+                return Directory.GetFiles(folder, "*.*", option).ToList();
+            }
+            return new List<string>();
+        }
+        static public List<string> GetAllFilesFromFolders(List<string> folders, SearchOption option)
+        {
+            List<string> files = new List<string>();
+            foreach(var folder in folders)
+            {
+                files.AddRange(GetAllFilesFromFolder(folder, option));
+            }
+            return files.ToHashSet().ToList();
+        }
+        
         static public T FindParent<T>(DependencyObject dependencyObject) where T : DependencyObject
         {
             var parent = VisualTreeHelper.GetParent(dependencyObject);
@@ -142,7 +174,7 @@ namespace SkyrimPluginTextEditor
         {
             foreach (var c in path)
             {
-                if (c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == 'I')
+                if (c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == 'I')
                     return c;
             }
             return '0';

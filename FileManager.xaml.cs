@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 
 #pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
@@ -22,6 +24,7 @@ namespace SkyrimPluginTextEditor
     public partial class FileManager : Window
     {
         private List<string> selectedFolders = new List<string>();
+        private List<string> selectedFiles = new List<string>();
         private List<MoveFileSet> files = new List<MoveFileSet>();
         private List<MoveFileSet> nonSkyrimFiles = new List<MoveFileSet>();
         private List<MoveFileSet> filesDisable = new List<MoveFileSet>();
@@ -57,86 +60,34 @@ namespace SkyrimPluginTextEditor
         public void LoadFolderList(List<string> folders)
         {
             selectedFolders = folders;
+            selectedFiles = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.AllDirectories);
+            Load();
+        }
+        public void LoadFileList(List<string> files)
+        {
+            selectedFolders.Clear();
+            selectedFiles = files;
+            Load();
+        }
+        public void Load()
+        {
             LV_FileList_Update(true);
             LV_ExtensionList_Update(true);
             MI_Reset_Active(true);
             MI_Save_Active(false);
             MI_Macro_Active(false);
-            GetFiles();
+            Task.Run(() => GetFiles());
             MI_Macro_Active(true);
         }
 
         public bool IsInitialDone() { return initialDone; }
 
-        private void GetFile(string path, object tmpLock)
-        {
-            string fileName = System.IO.Path.GetFileName(path);
-            MoveFileSet newFile = new MoveFileSet();
-
-            newFile.FileBefore = Util.GetRelativePath(path);
-            newFile.FileAfter = newFile.FileBefore;
-            newFile.FileFullPath = path;
-            newFile.IsChecked = true;
-            newFile.IsSelected = false;
-            newFile.NonSkyrimFile = !Util.IsPossibleRelativePath(path);
-            newFile.FileBasePath = Util.GetBasePath(path);
-            newFile.DisplayBefore = newFile.FileBefore;
-            newFile.DisplayAfter = newFile.FileAfter;
-            newFile.IsContentEdited = false;
-
-            if (Util.IsTextFile(fileName))
-            {
-
-                newFile.FileContentBefore = Util.ReadAllText(path, out newFile.FileContentEncoding);
-                newFile.FileContentAfter = newFile.FileContentBefore;
-                newFile.IsContainsContent = true;
-            }
-
-            if (fileContent.IsChecked && newFile.IsContainsContent)
-            {
-                newFile.TooltipBefore = newFile.FileContentBefore;
-                newFile.TooltipAfter = newFile.FileContentAfter;
-            }
-            else
-            {
-                if (newFile.NonSkyrimFile)
-                {
-                    newFile.TooltipBefore = newFile.FileBefore;
-                    newFile.TooltipAfter = newFile.FileAfter;
-                }
-                else
-                {
-                    newFile.TooltipBefore = newFile.FileBasePath + newFile.FileBefore;
-                    newFile.TooltipAfter = newFile.FileBasePath + newFile.FileAfter;
-                }
-            }
-
-            newFile.FileExtension = System.IO.Path.GetExtension(path).ToLower();
-            int index = extensionList.FindIndex(x => x.FileExtension == newFile.FileExtension);
-
-            lock (tmpLock)
-            {
-                if (newFile.NonSkyrimFile)
-                {
-                    nonSkyrimFiles.Add(newFile);
-                }
-                else
-                {
-                    files.Add(newFile);
-                }
-
-                if (index == -1)
-                {
-                    extensionList.Add(new Extensions() { FileExtension = newFile.FileExtension, IsChecked = true, IsSelected = false });
-                }
-            }
-        }
         private void GetFiles()
         {
             isContentEdited = false;
 
             ProgressBarInitial();
-            double step = ProgressBarMaximum() / selectedFolders.Count;
+            double step = ProgressBarMaximum() / selectedFiles.Count;
             object tmpLock = new object();
 
             LV_FileList_Active(false);
@@ -146,30 +97,81 @@ namespace SkyrimPluginTextEditor
             filesEdited.Clear();
 
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
-            Parallel.ForEach(selectedFolders, folder =>
+            ConcurrentBag<MoveFileSet> fileTemp = new ConcurrentBag<MoveFileSet>();
+            ConcurrentBag<MoveFileSet> nonSkyrimFileTemp = new ConcurrentBag<MoveFileSet>();
+            ConcurrentDictionary<string, Extensions> extensionTemp = new ConcurrentDictionary<string, Extensions>();
+            Parallel.ForEach(selectedFiles, async path =>
             {
-                if (Directory.Exists(folder))
+                if (!Util.CanRead(path))
                 {
-                    var filesInDirectory = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories);
-                    if (filesInDirectory.Length > 0)
+                    Logger.Log.Error("Unable to access : " + path);
+                    failFiles.Add(path);
+                }
+                else
+                {
+                    string fileName = System.IO.Path.GetFileName(path);
+                    MoveFileSet newFile = new MoveFileSet();
+
+                    newFile.FileBefore = Util.GetRelativePath(path);
+                    newFile.FileAfter = newFile.FileBefore;
+                    newFile.FileFullPath = path;
+                    newFile.IsChecked = true;
+                    newFile.IsSelected = false;
+                    newFile.NonSkyrimFile = !Util.IsPossibleRelativePath(path);
+                    newFile.FileBasePath = Util.GetBasePath(path);
+                    newFile.DisplayBefore = newFile.FileBefore;
+                    newFile.DisplayAfter = newFile.FileAfter;
+                    newFile.IsContentEdited = false;
+
+                    if (Util.IsTextFile(fileName))
                     {
-                        double fileStep = step / filesInDirectory.Length;
-                        Parallel.ForEach(filesInDirectory, path =>
-                        {
-                            if (!Util.CanRead(path))
-                            {
-                                Logger.Log.Error("Unable to access : " + path);
-                                failFiles.Add(path);
-                            }
-                            else
-                                GetFile(path, tmpLock);
-                            ProgressBarStep(fileStep);
-                        });
+                        newFile.FileContentBefore = Util.ReadAllText(path, out newFile.FileContentEncoding);
+                        newFile.FileContentAfter = newFile.FileContentBefore;
+                        newFile.IsContainsContent = true;
+                    }
+
+                    if (fileContent.IsChecked && newFile.IsContainsContent)
+                    {
+                        newFile.TooltipBefore = newFile.FileContentBefore;
+                        newFile.TooltipAfter = newFile.FileContentAfter;
                     }
                     else
-                        ProgressBarStep(step);
+                    {
+                        if (newFile.NonSkyrimFile)
+                        {
+                            newFile.TooltipBefore = newFile.FileBefore;
+                            newFile.TooltipAfter = newFile.FileAfter;
+                        }
+                        else
+                        {
+                            newFile.TooltipBefore = newFile.FileBasePath + newFile.FileBefore;
+                            newFile.TooltipAfter = newFile.FileBasePath + newFile.FileAfter;
+                        }
+                    }
+
+                    newFile.FileExtension = System.IO.Path.GetExtension(path).ToLower();
+                    if (newFile.NonSkyrimFile)
+                    {
+                        nonSkyrimFileTemp.Add(newFile);
+                    }
+                    else
+                    {
+                        fileTemp.Add(newFile);
+                    }
+                    Extensions newExtension = new Extensions() 
+                    {
+                        FileExtension = newFile.FileExtension,
+                        IsChecked = true,
+                        IsSelected = false
+                    };
+                    extensionTemp.AddOrUpdate(newFile.FileExtension, newExtension, (key, oldValue) => newExtension);
                 }
+                ProgressBarStep(step);
             });
+            files.AddRange(fileTemp);
+            nonSkyrimFiles.AddRange(nonSkyrimFileTemp);
+            extensionList.AddRange(extensionTemp.Values.ToList());
+
             LV_FileList_Update();
             LV_ExtensionList_Update();
 
@@ -521,6 +523,10 @@ namespace SkyrimPluginTextEditor
             }));
         }
         private void MI_Save_Click(object sender, RoutedEventArgs e)
+        {
+            Save();
+        }
+        private void Save()
         {
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(filesEdited, file =>
@@ -940,10 +946,10 @@ namespace SkyrimPluginTextEditor
             string file = Util.GetMacroFile();
             if (file == "")
                 return;
-            Macro_Load(sender, e, file, false);
+            Macro_Load(file, false);
         }
 
-        public void Macro_Load(object sender, RoutedEventArgs e, string file, bool endClose)
+        public void Macro_Load(string file, bool endClose)
         {
             bool isFileEdit = false;
             bool isNifEdit = false;
@@ -1091,7 +1097,7 @@ namespace SkyrimPluginTextEditor
                 }
                 else if (m1 == "SAVE")
                 {
-                    MI_Save_Click(sender, e);
+                    Save();
                     isSave = true;
                 }
 
@@ -1115,7 +1121,7 @@ namespace SkyrimPluginTextEditor
             {
                 App.nifManager = new NifManager();
                 App.nifManager.LoadNifFiles(selectedFolders);
-                App.nifManager.Macro_Load(sender, e, file, !App.nifManager.IsLoaded);
+                App.nifManager.Macro_Load(file, !App.nifManager.IsLoaded);
             }
 
             MacroMode = false;
@@ -1133,6 +1139,47 @@ namespace SkyrimPluginTextEditor
             App.nifManager = new NifManager();
             App.nifManager.Show();
             App.nifManager.LoadNifFiles(selectedFolders);
+        }
+
+        private void FileOrFolderDrop(object sender, DragEventArgs e)
+        {
+            if (e == null)
+                return;
+            string[] FileOrFolder = e.Data.GetData(DataFormats.FileDrop) as string[];
+            e.Handled = true;
+
+            foreach (var macro in FileOrFolder.ToList().FindAll(x => Util.IsMacroFile(x) && File.Exists(x)))
+            {
+                if (System.Windows.MessageBox.Show("Do you want to load the macro file?\n" + System.IO.Path.GetFileName(macro),
+                    "Macro Load", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    Macro_Load(macro, false);
+            }
+
+            bool isUpdateFileList = false;
+            var folders = FileOrFolder.ToList().FindAll(x => Directory.Exists(x));
+            if (folders.Count > 0)
+            {
+                selectedFolders = folders;
+                selectedFiles = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.AllDirectories);
+                isUpdateFileList = true;
+            }
+            var files = FileOrFolder.ToList().FindAll(x => File.Exists(x));
+            if (files.Count > 0)
+            {
+                if (isUpdateFileList)
+                {
+                    selectedFiles.AddRange(files);
+                }
+                else
+                {
+                    selectedFolders.Clear();
+                    selectedFiles = files;
+                }
+                isUpdateFileList = true;
+            }
+
+            if (isUpdateFileList)
+                Load();
         }
     }
     public class FileContent : INotifyPropertyChanged

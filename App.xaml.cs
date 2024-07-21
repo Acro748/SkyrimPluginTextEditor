@@ -7,7 +7,7 @@ namespace SkyrimPluginTextEditor
     /// </summary>
     public partial class App : Application
     {
-        public static readonly string Version = "v1.3.0";
+        public static readonly string Version = "v1.3.1";
         public static MainWindow mainWindow = new MainWindow();
         public static FileManager fileManager = null;
         public static NifManager nifManager = null;
