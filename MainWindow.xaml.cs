@@ -1460,10 +1460,8 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in pluginList)
                                 {
-                                    if (item.PluginName == m4 || item.RecordType == m4)
-                                    {
+                                    if (Util.IsSameStringIgnoreCase(item.PluginName, m4) || Util.IsSameStringIgnoreCase(item.RecordType, m4))
                                         item.IsChecked = true;
-                                    }
                                 }
                             }
                         }
@@ -1483,10 +1481,8 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in pluginList)
                                 {
-                                    if (item.PluginName == m4 || item.RecordType == m4)
-                                    {
+                                    if (Util.IsSameStringIgnoreCase(item.PluginName, m4) || Util.IsSameStringIgnoreCase(item.RecordType, m4))
                                         item.IsChecked = false;
-                                    }
                                 }
                             }
                         }
@@ -1516,10 +1512,8 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in fragmentList)
                                 {
-                                    if (item.FragmentType == m4)
-                                    {
+                                    if (Util.IsSameStringIgnoreCase(item.FragmentType, m4))
                                         item.IsChecked = true;
-                                    }
                                 }
                             }
                         }
@@ -1539,10 +1533,8 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in fragmentList)
                                 {
-                                    if (item.FragmentType == m4)
-                                    {
+                                    if (Util.IsSameStringIgnoreCase(item.FragmentType, m4))
                                         item.IsChecked = false;
-                                    }
                                 }
                             }
                         }
@@ -1572,10 +1564,8 @@ namespace SkyrimPluginTextEditor
                             {
                                 Parallel.ForEach(dataEditFields, item =>
                                 {
-                                    if (item.TextAfter.Contains(m4))
-                                    {
+                                    if (item.TextAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
                                         item.IsChecked = true;
-                                    }
                                 });
                             }
                         }
@@ -1595,10 +1585,8 @@ namespace SkyrimPluginTextEditor
                             {
                                 Parallel.ForEach(dataEditFields, item =>
                                 {
-                                    if (item.TextAfter.Contains(m4))
-                                    {
+                                    if (item.TextAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
                                         item.IsChecked = false;
-                                    }
                                 });
                             }
                         }

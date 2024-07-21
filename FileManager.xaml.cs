@@ -1002,23 +1002,65 @@ namespace SkyrimPluginTextEditor
                     {
                         if (m3 == "CHECK")
                         {
-                            foreach (var item in extensionList)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = true;
+                                foreach (var item in extensionList)
+                                {
+                                    item.IsChecked = true;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in extensionList)
+                                {
+                                    if (item.FileExtension.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = true;
+                                }
                             }
                         }
                         else if (m3 == "UNCHECK")
                         {
-                            foreach (var item in extensionList)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = false;
+                                foreach (var item in extensionList)
+                                {
+                                    item.IsChecked = false;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in extensionList)
+                                {
+                                    if (item.FileExtension.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = false;
+                                }
                             }
                         }
                         else if (m3 == "INVERT")
                         {
-                            foreach (var item in extensionList)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = !item.IsChecked;
+                                foreach (var item in extensionList)
+                                {
+                                    item.IsChecked = !item.IsChecked;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in extensionList)
+                                {
+                                    if (item.FileExtension.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = !item.IsChecked;
+                                }
                             }
                         }
                     }
@@ -1026,24 +1068,66 @@ namespace SkyrimPluginTextEditor
                     {
                         if (m3 == "CHECK")
                         {
-                            Parallel.ForEach(files, item =>
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = true;
-                            });
+                                Parallel.ForEach(files, item =>
+                                {
+                                    item.IsChecked = true;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(files, item =>
+                                {
+                                    if (item.FileAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = true;
+                                });
+                            }
                         }
                         else if (m3 == "UNCHECK")
                         {
-                            Parallel.ForEach(files, item =>
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = false;
-                            });
+                                Parallel.ForEach(files, item =>
+                                {
+                                    item.IsChecked = false;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(files, item =>
+                                {
+                                    if (item.FileAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = false;
+                                });
+                            }
                         }
                         else if (m3 == "INVERT")
                         {
-                            Parallel.ForEach(files, item =>
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = !item.IsChecked;
-                            });
+                                Parallel.ForEach(files, item =>
+                                {
+                                    item.IsChecked = !item.IsChecked;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(files, item =>
+                                {
+                                    if (item.FileAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = !item.IsChecked;
+                                });
+                            }
                         }
                     }
                     else if (m2 == "MATCHCASE")

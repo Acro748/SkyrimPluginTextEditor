@@ -754,23 +754,65 @@ namespace SkyrimPluginTextEditor
                     {
                         if (m3 == "CHECK")
                         {
-                            foreach (var item in blockNames)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = true;
+                                foreach (var item in blockNames)
+                                {
+                                    item.IsChecked = true;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in blockNames)
+                                {
+                                    if (Util.IsSameStringIgnoreCase(item.blockName, m4))
+                                        item.IsChecked = true;
+                                }
                             }
                         }
                         else if (m3 == "UNCHECK")
                         {
-                            foreach (var item in blockNames)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = false;
+                                foreach (var item in blockNames)
+                                {
+                                    item.IsChecked = false;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in blockNames)
+                                {
+                                    if (Util.IsSameStringIgnoreCase(item.blockName, m4))
+                                        item.IsChecked = false;
+                                }
                             }
                         }
                         else if (m3 == "INVERT")
                         {
-                            foreach (var item in blockNames)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = !item.IsChecked;
+                                foreach (var item in blockNames)
+                                {
+                                    item.IsChecked = !item.IsChecked;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in blockNames)
+                                {
+                                    if (Util.IsSameStringIgnoreCase(item.blockName, m4))
+                                        item.IsChecked = !item.IsChecked;
+                                }
                             }
                         }
                     }
@@ -778,23 +820,65 @@ namespace SkyrimPluginTextEditor
                     {
                         if (m3 == "CHECK")
                         {
-                            foreach (var item in stringTypes)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = true;
+                                foreach (var item in stringTypes)
+                                {
+                                    item.IsChecked = true;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in stringTypes)
+                                {
+                                    if (!Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                        item.IsChecked = true;
+                                }
                             }
                         }
                         else if (m3 == "UNCHECK")
                         {
-                            foreach (var item in stringTypes)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = false;
+                                foreach (var item in stringTypes)
+                                {
+                                    item.IsChecked = false;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in stringTypes)
+                                {
+                                    if (!Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                        item.IsChecked = false;
+                                }
                             }
                         }
                         else if (m3 == "INVERT")
                         {
-                            foreach (var item in stringTypes)
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = !item.IsChecked;
+                                foreach (var item in stringTypes)
+                                {
+                                    item.IsChecked = !item.IsChecked;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var item in stringTypes)
+                                {
+                                    if (!Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                        item.IsChecked = !item.IsChecked;
+                                }
                             }
                         }
                     }
@@ -802,24 +886,66 @@ namespace SkyrimPluginTextEditor
                     {
                         if (m3 == "CHECK")
                         {
-                            Parallel.ForEach(nifDatas, item =>
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = true;
-                            });
+                                Parallel.ForEach(nifDatas, item =>
+                                {
+                                    item.IsChecked = true;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(nifDatas, item =>
+                                {
+                                    if (item.strAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = true;
+                                });
+                            }
                         }
                         else if (m3 == "UNCHECK")
                         {
-                            Parallel.ForEach(nifDatas, item =>
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = false;
-                            });
+                                Parallel.ForEach(nifDatas, item =>
+                                {
+                                    item.IsChecked = false;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(nifDatas, item =>
+                                {
+                                    if (item.strAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = false;
+                                });
+                            }
                         }
                         else if (m3 == "INVERT")
                         {
-                            Parallel.ForEach(nifDatas, item =>
+                            if (macro.Length < 4)
+                                continue;
+                            var m4 = macro[3];
+                            if (m4 == "ALL")
                             {
-                                item.IsChecked = !item.IsChecked;
-                            });
+                                Parallel.ForEach(nifDatas, item =>
+                                {
+                                    item.IsChecked = !item.IsChecked;
+                                });
+                            }
+                            else
+                            {
+                                Parallel.ForEach(nifDatas, item =>
+                                {
+                                    if (item.strAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                        item.IsChecked = !item.IsChecked;
+                                });
+                            }
                         }
                     }
                     else if (m2 == "MATCHCASE")

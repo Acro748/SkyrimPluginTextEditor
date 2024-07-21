@@ -51,6 +51,13 @@ namespace SkyrimPluginTextEditor
             return files.ToHashSet().ToList();
         }
         
+        static public bool IsSameStringIgnoreCase(string a, string b)
+        {
+            a = a.ToLower(); 
+            b = b.ToLower();
+            return a == b;
+        }
+
         static public T FindParent<T>(DependencyObject dependencyObject) where T : DependencyObject
         {
             var parent = VisualTreeHelper.GetParent(dependencyObject);
