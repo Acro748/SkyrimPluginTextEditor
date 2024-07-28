@@ -75,8 +75,6 @@ namespace SkyrimPluginTextEditor
             LV_FragmentList_Active(false);
             MI_Reset_Active(false);
             MI_Save_Active(false);
-            MI_FileManager_Active(false);
-            MI_NifManager_Active(false);
             MI_Macro_Active(false);
 
             SafetyMode.IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode();
@@ -180,8 +178,6 @@ namespace SkyrimPluginTextEditor
             CB_MasterPluginBefore_Active(false);
             MI_Reset_Active(true);
             MI_Save_Active(false);
-            MI_FileManager_Active(false);
-            MI_NifManager_Active(false);
             MI_OpenFolder_Active(false);
 
             pluginDatas.Clear();
@@ -374,8 +370,6 @@ namespace SkyrimPluginTextEditor
             }
 
             BT_Apply_Update();
-            MI_FileManager_Active();
-            MI_NifManager_Active();
 
             Logger.Log.Info("Loaded " + dataEditFields.Count + " from " + selectedFiles.Count + " files");
         }
@@ -1082,14 +1076,8 @@ namespace SkyrimPluginTextEditor
                 return;
             App.fileManager = new FileManager();
             App.fileManager.Show(); 
-            App.fileManager.LoadFolderList(selectedFolders);
-        }
-        private void MI_FileManager_Active(bool Active = true)
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                MI_FileManager.IsEnabled = Active;
-            }));
+            if (selectedFolders.Count > 0)
+                App.fileManager.LoadFolderList(selectedFolders);
         }
 
         private void MI_Macro_Active(bool Active = true)
@@ -1397,8 +1385,6 @@ namespace SkyrimPluginTextEditor
             LV_ConvertList_Active(false);
             MI_OpenFolder_Active(false);
             MI_Reset_Active(false);
-            MI_FileManager_Active(false);
-            MI_NifManager_Active(false);
             MacroMode = true;
 
             foreach (var line in File.ReadLines(file))
@@ -1658,8 +1644,6 @@ namespace SkyrimPluginTextEditor
             LV_ConvertList_Active();
             MI_OpenFolder_Active();
             MI_Reset_Active();
-            MI_FileManager_Active();
-            MI_NifManager_Active();
 
             if (isFileEdit)
             {
@@ -1701,20 +1685,14 @@ namespace SkyrimPluginTextEditor
             Config.GetSingleton.SetSkyrimPluginEditor_FileBackup(FileBackup.IsChecked);
         }
 
-        private void MI_NifManager_Active(bool Active = true)
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                MI_NifManager.IsEnabled = Active;
-            }));
-        }
         private void MI_NifManager_Click(object sender, RoutedEventArgs e)
         {
             if (App.nifManager != null && App.nifManager.IsLoaded)
                 return;
             App.nifManager = new NifManager();
             App.nifManager.Show();
-            App.nifManager.LoadNifFiles(selectedFolders);
+            if (selectedFolders.Count > 0)
+                App.nifManager.LoadNifFiles(selectedFolders);
         }
 
         private void FileOrFolderDrop(object sender, DragEventArgs e)
