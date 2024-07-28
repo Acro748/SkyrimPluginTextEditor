@@ -68,7 +68,7 @@ namespace SkyrimPluginTextEditor
             while (true);
             return GetString(bytes.ToArray());
         }
-        public string GetString(byte[] bytes)
+        static public string GetString(byte[] bytes)
         {
             switch (Config.GetSingleton.GetEncoding())
             {
@@ -83,7 +83,7 @@ namespace SkyrimPluginTextEditor
             }
             return "";
         }
-        public byte[] GetBytes(char[] data)
+        static public byte[] GetBytes(char[] data)
         {
             if (data == null || data.Length == 0)
                 return new byte[0];
@@ -100,27 +100,27 @@ namespace SkyrimPluginTextEditor
             }
             return null;
         }
-        public byte[] GetBytes(UInt16 data)
+        static public byte[] GetBytes(UInt16 data)
         {
             return BitConverter.GetBytes(data);
         }
-        public byte[] GetBytes(Int16 data)
+        static public byte[] GetBytes(Int16 data)
         {
             return BitConverter.GetBytes(data);
         }
-        public byte[] GetBytes(UInt32 data)
+        static public byte[] GetBytes(UInt32 data)
         {
             return BitConverter.GetBytes(data);
         }
-        public byte[] GetBytes(Int32 data)
+        static public byte[] GetBytes(Int32 data)
         {
             return BitConverter.GetBytes(data);
         }
-        public byte[] GetBytes(float data)
+        static public byte[] GetBytes(float data)
         {
             return BitConverter.GetBytes(data);
         }
-        public byte[] GetBytes(string data)
+        static public byte[] GetBytes(string data)
         {
             if (data == null)
                 return new byte[0];
@@ -137,7 +137,7 @@ namespace SkyrimPluginTextEditor
             }
             return new byte[0];
         }
-        public byte[] SetNullEndOfString(byte[] bytes)
+        static public byte[] SetNullEndOfString(byte[] bytes)
         {
             if (bytes.Last() == 0)
                 return bytes; 
@@ -146,14 +146,14 @@ namespace SkyrimPluginTextEditor
             return newBytes;
         }
 
-        public List<byte> GetByteList(char[] data) { return GetBytes(data).ToList(); }
-        public List<byte> GetByteList(UInt16 data) { return GetBytes(data).ToList(); }
-        public List<byte> GetByteList(Int16 data) { return GetBytes(data).ToList(); }
-        public List<byte> GetByteList(UInt32 data) { return GetBytes(data).ToList(); }
-        public List<byte> GetByteList(Int32 data) { return GetBytes(data).ToList(); }
-        public List<byte> GetByteList(float data) { return GetBytes(data).ToList(); }
-        public List<byte> GetByteList(string data) { return data != null ? GetBytes(data).ToList() : new List<byte>(); }
-        public List<byte> GetByteList(byte[] data) { return data.ToList(); }
+        static public List<byte> GetByteList(char[] data) { return GetBytes(data).ToList(); }
+        static public List<byte> GetByteList(UInt16 data) { return GetBytes(data).ToList(); }
+        static public List<byte> GetByteList(Int16 data) { return GetBytes(data).ToList(); }
+        static public List<byte> GetByteList(UInt32 data) { return GetBytes(data).ToList(); }
+        static public List<byte> GetByteList(Int32 data) { return GetBytes(data).ToList(); }
+        static public List<byte> GetByteList(float data) { return GetBytes(data).ToList(); }
+        static public List<byte> GetByteList(string data) { return data != null ? GetBytes(data).ToList() : new List<byte>(); }
+        static public List<byte> GetByteList(byte[] data) { return data.ToList(); }
 
         protected byte[] ReadBytes(int count = 1, int offset = 0)
         {
@@ -183,13 +183,40 @@ namespace SkyrimPluginTextEditor
         {
             return pos < file.Position;
         }
-        protected string GetHex(uint hex)
+        static protected string GetHex(uint hex)
         {
             return hex.ToString("X");
         }
+
+        static public bool CanRead(string file)
+        {
+            return CanAccess(file, FileAccess.Read) == 0;
+        }
+        static public bool CanWrite(string file)
+        {
+            return CanAccess(file, FileAccess.Write) != -1;
+        }
+        static public int CanAccess(string file, FileAccess access) // 0 = good, -1 faild, -2 not exist
+        {
+            if (!File.Exists(file))
+                return -2;
+            try
+            {
+                using (FileStream stream = new FileStream(file, FileMode.Open, access))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                return -1;
+            }
+
+            return 0;
+        }
     }
 
-    public class PluginData : PluginStreamBase
+    public class SkyrimPluginData : PluginStreamBase
     {
         public enum _FileFlags : UInt32
         {
@@ -264,8 +291,8 @@ namespace SkyrimPluginTextEditor
             public UInt16 DATA_DataSize; //2
             public byte[] DATA_Unk; //00 00 00 00 00 00 00 00
 
-            //Below is not included in the file, just for parse
-            public int IsEditable;
+            public string GetMasterPluginName() { return GetString(MasterPlugin); }
+            public void SetMasterPluginName(string newName) { MasterPlugin = GetBytes(newName); }
         }
         public class _GRUP : _PluginDataBase32
         {
@@ -296,6 +323,8 @@ namespace SkyrimPluginTextEditor
             //_RecordHeader RecordHeader; //DataSize = UncompressedSize + compressedData
             //UInt32 UncompressedSize;
             //byte[] compressedData; //Compressed Fragments
+
+            public string GetRecordType() { return new string(Signature); }
         }
         public class _Record_Fragment : _PluginDataBase16
         {
@@ -303,8 +332,9 @@ namespace SkyrimPluginTextEditor
             //public UInt16 DataSize; //2 only data
             public byte[] Data;
 
-            //Below is not included in the file, just for parse
-            public int IsEditable;
+            public string GetFragmentType() { return new string(Signature); }
+            public string GetDataAsString() { return GetString(Data); }
+            public void SetData(string data) { Data = GetBytes(data); }
         }
         public string GetFilePath() { return path; }
         public string GetFileName() { return name; }
@@ -312,10 +342,10 @@ namespace SkyrimPluginTextEditor
         protected string path;
         protected string name;
         protected _PluginDataStruct plugin;
-        protected LocalizeData localizeData;
+        protected SkyrimLocalizeData localizeData;
         protected bool readed = false;
 
-        public PluginData(string pluginPath)
+        public SkyrimPluginData(string pluginPath)
         {
             this.path = pluginPath;
             this.name = Path.GetFileName(pluginPath);
@@ -334,7 +364,43 @@ namespace SkyrimPluginTextEditor
             File.Copy(path, target, true);
             Logger.Log.Info("Backup file... : " + path);
         }
-
+        public _HEDR GetHEDR()
+        {
+            if (plugin == null)
+                return null;
+            return plugin.Header;
+        }
+        public List<_MAST> GetMasterPlugins()
+        {
+            if (plugin == null)
+                return new List<_MAST>();
+            return plugin.MasterPlugin;
+        }
+        public List<_Record_Fragment> GetFrontFragment()
+        {
+            if (plugin == null) 
+                return new List<_Record_Fragment>();
+            return plugin.FrontFragment;
+        }
+        public List<_Record_Fragment> GetBackFragment()
+        {
+            if (plugin == null) 
+                return new List<_Record_Fragment>();
+            return plugin.BackFragment;
+        }
+        public UInt32 GetNextFormID()
+        {
+            if (plugin == null)
+                return 0;
+            return plugin.Header.NextObjectID;
+        }
+        public string GetRecordTypeByFragment(_Record_Fragment frag)
+        {
+            var find = GetRecords().Find(x => x.Fragment.Find(y => y == frag) != null);
+            if (find == null)
+                return null;
+            return find != null ? find.GetRecordType() : null;
+        }
         public _Record GetRecord(UInt32 formID)
         {
             if (plugin == null)
@@ -475,6 +541,12 @@ namespace SkyrimPluginTextEditor
                 return record.Fragment;
             return new List<_Record_Fragment>();
         }
+        public List<_Record_Fragment> GetFragments(string record_sig, string frag_sig)
+        {
+            if (plugin == null || record_sig.Length != 4 || frag_sig.Length != 4)
+                return new List<_Record_Fragment>(); ;
+            return GetFragments(record_sig.ToCharArray(), frag_sig.ToCharArray());
+        }
         public List<_Record_Fragment> GetFragments(char[] record_sig, char[] frag_sig)
         {
             List<_Record_Fragment> finds = new List<_Record_Fragment>();
@@ -487,29 +559,9 @@ namespace SkyrimPluginTextEditor
             }
             return finds;
         }
-        public string GetStringData(_Record_Fragment frag)
-        {
-            if (IsLocalized() && localizeData != null && frag.Data.Length == 4)
-            {
-                string str = localizeData.GetStringByID(frag.Data);
-                if (str != null)
-                    return str;
-            }
-            return BitConverter.ToString(frag.Data);
-        }
-        public bool SetStringData(_Record_Fragment frag, string str)
-        {
-            if (IsLocalized() && localizeData != null && frag.Data.Length == 4)
-            {
-                if (localizeData.SetStringByID(frag.Data, str))
-                    return true;
-            }
-            frag.Data = GetBytes(str);
-            return true;
-        }
     }
 
-    public class LocalizeData : PluginStreamBase
+    public class SkyrimLocalizeData : PluginStreamBase
     {
         public class _LocalizeDataStruct
         {
@@ -637,7 +689,7 @@ namespace SkyrimPluginTextEditor
 
         private string path;
 
-        public LocalizeData(string pluginPath)
+        public SkyrimLocalizeData(string pluginPath)
         {
             this.BaseDirectory = Path.GetDirectoryName(pluginPath) + "\\Strings\\";
             this.PluginName = Path.GetFileNameWithoutExtension(pluginPath);
@@ -651,7 +703,7 @@ namespace SkyrimPluginTextEditor
             string ilstringsPath = BaseDirectory + PluginName + "_" + Config.GetSingleton.GetStringLanguage() + ".ILSTRINGS";
             string dlstringsPath = BaseDirectory + PluginName + "_" + Config.GetSingleton.GetStringLanguage() + ".DLSTRINGS";
 
-            if (!Util.CanRead(stringsPath) || !Util.CanRead(ilstringsPath) || !Util.CanRead(dlstringsPath))
+            if (!CanRead(stringsPath) || !CanRead(ilstringsPath) || !CanRead(dlstringsPath))
                 return _ErrorCode.AccessError;
 
             path = stringsPath;
@@ -789,7 +841,7 @@ namespace SkyrimPluginTextEditor
             string ilstringsPath = folder + PluginName + "_" + Config.GetSingleton.GetStringLanguage() + ".ILSTRINGS";
             string dlstringsPath = folder + PluginName + "_" + Config.GetSingleton.GetStringLanguage() + ".DLSTRINGS";
 
-            if (!Util.CanWrite(stringsPath) || !Util.CanWrite(ilstringsPath) || !Util.CanWrite(dlstringsPath))
+            if (!CanWrite(stringsPath) || !CanWrite(ilstringsPath) || !CanWrite(dlstringsPath))
                 return false;
 
             if (STRINGS != null)
@@ -937,28 +989,9 @@ namespace SkyrimPluginTextEditor
         }
     }
 
-    public class PluginFile : PluginData
+    public class SkyrimPluginFile : SkyrimPluginData
     {
-        public class _Editable
-        {
-            public string RecordType { get; set; }
-            public string FragmentType { get; set; }
-            public string Text { get; set; }
-
-            public bool Localized { get; set; }
-            public UInt32 ID { get; set; }
-
-            public int EditableIndex { get; set; }
-        }
-        private int EditableIndex = 0;
-        protected List<_Editable> editableList = new List<_Editable>();
-        public List<_Editable> GetEditableList() { return editableList; }
-        public List<_Editable> GetEditableListOfMAST() { return editableList.FindAll(x => x.FragmentType == "MAST"); }
-        public List<_Editable> GetEditableListOfRecord() { return editableList.FindAll(x => x.FragmentType != "MAST"); }
-
-        bool IsEdited = false;
-
-        public PluginFile(string pluginPath) : base(pluginPath)
+        public SkyrimPluginFile(string pluginPath) : base(pluginPath)
         {
 
         }
@@ -968,7 +1001,7 @@ namespace SkyrimPluginTextEditor
             if (readed)
                 return _ErrorCode.Readed;
 
-            if (!Util.CanRead(path))
+            if (!CanRead(path))
                 return _ErrorCode.AccessError;
 
             readed = true;
@@ -998,7 +1031,7 @@ namespace SkyrimPluginTextEditor
             fileFlags = (_FileFlags)newPlugin.RecordFlags;
             if (IsLocalized())
             {
-                localizeData = new LocalizeData(path);
+                localizeData = new SkyrimLocalizeData(path);
                 LocalizedErrorCode = localizeData.Read();
             }
             newPlugin.FormID = ReadUInt32();
@@ -1170,8 +1203,6 @@ namespace SkyrimPluginTextEditor
             fragment.Signature = sig.ToCharArray();
             fragment.DataSize = ReadUInt16();
             fragment.Data = ReadBytes(fragment.DataSize);
-
-            fragment.IsEditable = AddEditableList(recordSig, sig, fragment.Data);
             return _ErrorCode.Passed; //passed
         }
         protected _ErrorCode Read(MemoryStream stream, _Record_Fragment fragment, string recordSig, ref string sig)
@@ -1184,7 +1215,6 @@ namespace SkyrimPluginTextEditor
             stream.Read(data, 0, fragment.DataSize);
             fragment.Data = data;
 
-            fragment.IsEditable = AddEditableList(recordSig, sig, fragment.Data);
             return _ErrorCode.Passed; //passed
         }
         protected _ErrorCode Read(_MAST master, string recordSig, ref string sig)
@@ -1193,8 +1223,6 @@ namespace SkyrimPluginTextEditor
             master.DataSize = ReadUInt16();
             string masterName = ReadString(master.DataSize);
             master.MasterPlugin = GetBytes(masterName);
-
-            master.IsEditable = AddEditableList(recordSig, sig, masterName);
 
             sig = ReadSignature();
             if (sig != "DATA")
@@ -1350,133 +1378,6 @@ namespace SkyrimPluginTextEditor
 
             return ErrorCode; //passed
         }
-        private int AddEditableList(string recordSig, string sig, Byte[] data)
-        {
-            return AddEditableList(recordSig, sig, GetString(data), data);
-        }
-        private int AddEditableList(string recordSig, string sig, string str, Byte[] data = null)
-        {
-            if (!Config.GetSingleton.IsEditableType(recordSig, sig))
-                return -1;
-            if (Config.GetSingleton.IsEditableBlackList(recordSig, sig))
-                return -1;
-
-            _Editable editable = new _Editable();
-            editable.RecordType = recordSig;
-            editable.FragmentType = sig;
-            if (IsLocalized() && Config.GetSingleton.IsLocalizeType(recordSig, sig))
-            {
-                editable.Localized = true;
-                if (data != null)
-                {
-                    editable.ID = BitConverter.ToUInt32(data, 0);
-                    editable.Text = localizeData.GetStringByID(editable.ID);
-                }
-            }
-            else
-            {
-                editable.Localized = false;
-                editable.Text = str;
-            }
-            editable.EditableIndex = EditableIndex;
-            editableList.Add(editable);
-
-            EditableIndex++;
-            return editable.EditableIndex;
-        }
-
-        public bool EditEditableList(string RecordType, string FragmentType, string TextOrig, string Text)
-        {
-            int index = editableList.FindIndex(x => x.RecordType == RecordType && x.FragmentType == FragmentType && x.Text == TextOrig);
-            if (index == -1)
-                return false;
-            if (TextOrig == Text)
-                return true;
-            editableList[index].Text = Text;
-            IsEdited = true;
-            return true;
-        }
-        public bool EditEditableList(int editableIndex, string Text)
-        {
-            if (EditableIndex < editableIndex)
-                return false;
-            int index = editableList.FindIndex(x => x.EditableIndex == editableIndex);
-            if (index == -1)
-                return false;
-            editableList[index].Text = Text;
-            IsEdited = true;
-            return true;
-        }
-        public void ApplyEditableDatas()
-        {
-            if (!IsEdited)
-                return;
-
-            foreach (_Record_Fragment fragment in plugin.FrontFragment)
-            {
-                ApplyEditableDatas_Record_Fragment(fragment);
-            }
-            foreach (_MAST mast in plugin.MasterPlugin)
-            {
-                ApplyEditableDatas_MAST(mast);
-            }
-            foreach (_Record_Fragment fragment in plugin.BackFragment)
-            {
-                ApplyEditableDatas_Record_Fragment(fragment);
-            }
-            foreach (_GRUP group in plugin.Group)
-            {
-                ApplyEditableDatas_GRUP(group);
-            }
-        }
-        private void ApplyEditableDatas_MAST(_MAST mast)
-        {
-            if (mast.IsEditable == -1)
-                return;
-            int index = editableList.FindIndex(x => x.EditableIndex == mast.IsEditable);
-            if (index == -1)
-                return;
-            mast.MasterPlugin = GetBytes(editableList[index].Text);
-        }
-
-        private void ApplyEditableDatas_GRUP(_GRUP group)
-        {
-            foreach (object item in group.Record)
-            {
-                if (item.GetType() == typeof(_GRUP))
-                {
-                    ApplyEditableDatas_GRUP(item as _GRUP);
-                }
-                else //record
-                {
-                    ApplyEditableDatas_Record(item as _Record);
-                }
-            }
-        }
-        private void ApplyEditableDatas_Record(_Record record)
-        {
-            foreach (_Record_Fragment fragment in record.Fragment)
-            {
-                ApplyEditableDatas_Record_Fragment(fragment);
-            }
-        }
-        private void ApplyEditableDatas_Record_Fragment(_Record_Fragment fragment)
-        {
-            if (fragment.IsEditable == -1)
-                return;
-            int index = editableList.FindIndex(x => x.EditableIndex == fragment.IsEditable);
-            if (index == -1)
-                return;
-            if (editableList[index].Localized)
-            {
-                if (!localizeData.SetStringByID(editableList[index].ID, editableList[index].Text))
-                {
-                    Logger.Log.Error("[" + editableList[index].RecordType + "|" + editableList[index].FragmentType + "]" + " Cannot edit localize " + editableList[index].ID + "|" + editableList[index].Text + " : " + path);
-                }
-                return;
-            }
-            fragment.Data = GetBytes(editableList[index].Text);
-        }
 
         public bool Write()
         {
@@ -1492,10 +1393,7 @@ namespace SkyrimPluginTextEditor
         }
         public bool Write(string filePath, bool fileBackup)
         {
-            if (!IsEdited)
-                return true;
-
-            if (!Util.CanWrite(filePath))
+            if (!CanWrite(filePath))
                 return false;
 
             List<byte> fileData = new List<byte>();

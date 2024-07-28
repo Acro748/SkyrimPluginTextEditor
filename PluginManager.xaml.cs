@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -23,11 +24,11 @@ namespace SkyrimPluginTextEditor
     /// </summary>
 
 
-    public partial class MainWindow : Window
+    public partial class PluginManager : Window
     {
         private List<string> selectedFolders = new List<string>();
         private List<string> selectedFiles = new List<string>();
-        private Dictionary<string, PluginFile> pluginDatas = new Dictionary<string, PluginFile>(); //fullpath, plugindata
+        private Dictionary<string, SkyrimPluginFile> pluginDatas = new Dictionary<string, SkyrimPluginFile>(); //fullpath, plugindata
         private List<PluginListData> pluginList = new List<PluginListData>();
         private List<FragmentTypeData> fragmentList = new List<FragmentTypeData>();
         private List<PluginToggleData> inactiveList = new List<PluginToggleData>(); //if there is a data then set invisible it
@@ -42,7 +43,7 @@ namespace SkyrimPluginTextEditor
         private CheckBoxBinder matchCase = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_MatchCase() };
         private bool MacroMode = false;
 
-        public MainWindow()
+        public PluginManager()
         {
             InitializeComponent();
             SizeChangeAll(Config.GetSingleton.GetSkyrimPluginEditor_Width() / this.Width);
@@ -136,7 +137,7 @@ namespace SkyrimPluginTextEditor
             string fileName = System.IO.Path.GetFileName(path);
             if (Util.IsPluginFIle(fileName))
             {
-                PluginFile pm = new PluginFile(path);
+                SkyrimPluginFile pm = new SkyrimPluginFile(path);
                 PluginStreamBase._ErrorCode errorCode = pm.Read();
                 lock (tmpLock)
                 {
@@ -185,7 +186,7 @@ namespace SkyrimPluginTextEditor
             MI_OpenFolder_Active(false);
 
             pluginDatas.Clear();
-            ConcurrentDictionary<string, PluginFile> pluginDatasTemp = new ConcurrentDictionary<string, PluginFile>();
+            ConcurrentDictionary<string, SkyrimPluginFile> pluginDatasTemp = new ConcurrentDictionary<string, SkyrimPluginFile>();
             ConcurrentDictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new ConcurrentDictionary<string, PluginStreamBase._ErrorCode>();
             object fileLock = new object();
             Parallel.ForEach(selectedFiles, async path =>
@@ -196,7 +197,7 @@ namespace SkyrimPluginTextEditor
                     string fileName = System.IO.Path.GetFileName(path);
                     if (Util.IsPluginFIle(fileName))
                     {
-                        PluginFile pm = new PluginFile(path);
+                        SkyrimPluginFile pm = new SkyrimPluginFile(path);
                         errorCode = pm.Read();
                         if (errorCode >= 0)
                         {
@@ -229,55 +230,59 @@ namespace SkyrimPluginTextEditor
             ulong dataIndex = 0;
             Parallel.ForEach (pluginDatas, async plugin =>
             {
-                var list = plugin.Value.GetEditableListOfRecord();
+                var list = GetEditableFragments(plugin.Value);
                 double miniStep = step / (list.Count == 0 ? 1 : list.Count);
                 if (list.Count > 0)
                 {
                     Parallel.ForEach(list, item =>
                     {
+                        string recordType = plugin.Value.GetRecordTypeByFragment(item);
                         var newPlugin = new PluginListData()
                         {
+                            File = plugin.Value,
+                            Fragment = item,
                             PluginName = plugin.Value.GetFileName(),
                             IsChecked = true,
-                            RecordType = item.RecordType,
+                            RecordType = recordType,
                             IsSelected = false,
                             PluginPath = plugin.Value.GetFilePath()
                         };
-                        newPluginList.AddOrUpdate(plugin.Value.GetFilePath() + item.RecordType, newPlugin, (key, oldValue) => newPlugin);
+                        newPluginList.AddOrUpdate(plugin.Value.GetFilePath() + recordType, newPlugin, (key, oldValue) => oldValue);
 
                         //fragment list
                         var newFragment = new FragmentTypeData()
                         {
                             IsChecked = true,
-                            FragmentType = item.FragmentType,
+                            FragmentType = item.GetFragmentType(),
                             IsSelected = false,
                             FromRecoredsToolTip = "",
                             FromRecordList = new ConcurrentDictionary<string, string>(),
                             IsEnabled = true,
                             Foreground = System.Windows.Media.Brushes.Black
                         };
-                        newFragment.FromRecordList.AddOrUpdate(item.RecordType, item.RecordType, (key, oldValue) => item.RecordType);
-                        newFragmentList.AddOrUpdate(item.FragmentType, newFragment, (key, oldValue) =>
+                        newFragment.FromRecordList.AddOrUpdate(recordType, recordType, (key, oldValue) => oldValue);
+                        newFragmentList.AddOrUpdate(item.GetFragmentType(), newFragment, (key, oldValue) =>
                         {
-                            oldValue.FromRecordList.AddOrUpdate(item.RecordType, item.RecordType, (key, oldValue) => item.RecordType);
+                            oldValue.FromRecordList.AddOrUpdate(recordType, recordType, (key, oldValue) => oldValue);
                             return oldValue;
                         });
 
                         newDataEditFields.Add(new DataEditField()
                         {
+                            file = plugin.Value,
+                            fragment = item,
                             PluginName = plugin.Key,
                             PluginPath = plugin.Value.GetFilePath(),
-                            RecordType = item.RecordType,
-                            FragmentType = item.FragmentType,
+                            RecordType = recordType,
+                            FragmentType = item.GetFragmentType(),
                             Index = Interlocked.Increment(ref dataIndex),
                             IsChecked = true,
                             IsSelected = false,
-                            TextBefore = item.Text,
-                            TextAfter = item.Text,
-                            TextBeforeDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
-                            TextAfterDisplay = MakeAltDataEditField(item.RecordType, item.FragmentType, item.Text),
-                            ToolTip = plugin.Value.GetFilePath(),
-                            EditableIndex = item.EditableIndex
+                            TextBefore = plugin.Value.Get,
+                            TextAfter = item.GetDataAsString(),
+                            TextBeforeDisplay = MakeAltDataEditField(recordType, item.GetFragmentType(), item.GetDataAsString()),
+                            TextAfterDisplay = MakeAltDataEditField(recordType, item.GetFragmentType(), item.Text),
+                            ToolTip = plugin.Value.GetFilePath()
                         });
 
                         ProgressBarStep(miniStep);
@@ -286,15 +291,19 @@ namespace SkyrimPluginTextEditor
                 else
                     ProgressBarStep(step);
 
-                var masters = plugin.Value.GetEditableListOfMAST();
+                var masters = plugin.Value.GetMasterPlugins();
                 foreach (var m in masters)
                 {
                     var newMaster = new MasterPluginField()
                     {
-                        MasterPluginName = m.Text,
-                        MasterPluginNameOrig = m.Text,
+                        Master = new List<SkyrimPluginData._MAST> { m },
+                        MasterPluginName = m.GetMasterPluginName(),
+                        MasterPluginNameOrig = m.GetMasterPluginName(),
                     };
-                    newMasterPluginList.AddOrUpdate(m.Text, newMaster, (key, oldValue) => oldValue);
+                    newMasterPluginList.AddOrUpdate(m.GetMasterPluginName(), newMaster, (key, oldValue) => {
+                        oldValue.Master.Add(m);
+                        return oldValue;
+                        });
                 }
             });
             pluginList.AddRange(newPluginList.Values.ToList().Except(pluginList));
@@ -1076,6 +1085,22 @@ namespace SkyrimPluginTextEditor
             SetPluginListView();
         }
 
+        private List<SkyrimPluginData._Record_Fragment> GetEditableFragments(SkyrimPluginData data)
+        {
+            List<SkyrimPluginData._Record_Fragment> finds = new List<SkyrimPluginData._Record_Fragment>();
+            var list = Config.GetSingleton.GetEditableType();
+            foreach (var itemX in list)
+            {
+                foreach (var itemY in itemX.Value)
+                {
+                    if (Config.GetSingleton.IsEditableBlackList(itemX.Key, itemY))
+                        continue;
+                    finds.AddRange(data.GetFragments(itemX.Key, itemY));
+                }
+            }
+            return finds;
+        }
+
         private void MI_FileManager_Click(object sender, RoutedEventArgs e)
         {
             if (App.fileManager != null && App.fileManager.IsLoaded)
@@ -1784,6 +1809,9 @@ namespace SkyrimPluginTextEditor
     }
     public class PluginListData : INotifyPropertyChanged
     {
+        public SkyrimPluginFile File { get; set; }
+        public SkyrimPluginData._Record_Fragment Fragment { get; set; }
+
         public string PluginName { get; set; }
         public string RecordType { get; set; }
 
@@ -1899,7 +1927,7 @@ namespace SkyrimPluginTextEditor
     }
     public class MasterPluginField : INotifyPropertyChanged
     {
-        public PluginFile._MAST master;
+        public List<SkyrimPluginFile._MAST> Master;
         private string _MasterPluginName;
         public string MasterPluginName 
         { 
@@ -1926,8 +1954,8 @@ namespace SkyrimPluginTextEditor
     }
     public class DataEditField : INotifyPropertyChanged
     {
-        public PluginFile file;
-        public PluginFile._Record_Fragment fragment;
+        public SkyrimPluginFile file;
+        public SkyrimPluginFile._Record_Fragment fragment;
 
         public string PluginName { get; set; }
         public string PluginPath { get; set; }
@@ -1950,7 +1978,6 @@ namespace SkyrimPluginTextEditor
                 OnPropertyChanged("ToolTip");
             }
         }
-        public int EditableIndex { get; set; }
         public bool IsEdited { get; set; }
 
         private bool _IsChecked;
