@@ -181,7 +181,7 @@ namespace SkyrimPluginTextEditor
         {
             foreach (var c in path)
             {
-                if (c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == 'I')
+                if (c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
                     return c;
             }
             return '0';

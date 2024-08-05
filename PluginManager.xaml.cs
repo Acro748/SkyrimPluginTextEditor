@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using log4net.Plugin;
+using Microsoft.Win32;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -76,8 +77,6 @@ namespace SkyrimPluginTextEditor
             LV_FragmentList_Active(false);
             MI_Reset_Active(false);
             MI_Save_Active(false);
-            MI_FileManager_Active(false);
-            MI_NifManager_Active(false);
             MI_Macro_Active(false);
 
             SafetyMode.IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode();
@@ -170,6 +169,7 @@ namespace SkyrimPluginTextEditor
             fragmentList.Clear();
             dataEditFields.Clear();
             dataEditFieldsDisable.Clear();
+            dataEditFieldsEdited.Clear();
             inactiveList.Clear();
             LV_PluginList_Update();
             LV_FragmentList_Update();
@@ -181,14 +181,11 @@ namespace SkyrimPluginTextEditor
             CB_MasterPluginBefore_Active(false);
             MI_Reset_Active(true);
             MI_Save_Active(false);
-            MI_FileManager_Active(false);
-            MI_NifManager_Active(false);
             MI_OpenFolder_Active(false);
 
             pluginDatas.Clear();
             ConcurrentDictionary<string, SkyrimPluginFile> pluginDatasTemp = new ConcurrentDictionary<string, SkyrimPluginFile>();
             ConcurrentDictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new ConcurrentDictionary<string, PluginStreamBase._ErrorCode>();
-            object fileLock = new object();
             Parallel.ForEach(selectedFiles, async path =>
             {
                 if (File.Exists(path))
@@ -267,23 +264,22 @@ namespace SkyrimPluginTextEditor
                             return oldValue;
                         });
 
-                        newDataEditFields.Add(new DataEditField()
-                        {
-                            file = plugin.Value,
-                            fragment = item,
-                            PluginName = plugin.Key,
-                            PluginPath = plugin.Value.GetFilePath(),
-                            RecordType = recordType,
-                            FragmentType = item.GetFragmentType(),
-                            Index = Interlocked.Increment(ref dataIndex),
-                            IsChecked = true,
-                            IsSelected = false,
-                            TextBefore = plugin.Value.Get,
-                            TextAfter = item.GetDataAsString(),
-                            TextBeforeDisplay = MakeAltDataEditField(recordType, item.GetFragmentType(), item.GetDataAsString()),
-                            TextAfterDisplay = MakeAltDataEditField(recordType, item.GetFragmentType(), item.Text),
-                            ToolTip = plugin.Value.GetFilePath()
-                        });
+                        DataEditField newDataEditField = new DataEditField();
+                        newDataEditField.file = plugin.Value;
+                        newDataEditField.fragment = item;
+                        newDataEditField.PluginName = plugin.Value.GetFileName();
+                        newDataEditField.PluginPath = plugin.Value.GetFilePath();
+                        newDataEditField.RecordType = recordType;
+                        newDataEditField.FragmentType = item.GetFragmentType();
+                        newDataEditField.Index = Interlocked.Increment(ref dataIndex);
+                        newDataEditField.IsChecked = true;
+                        newDataEditField.IsSelected = false;
+                        newDataEditField.TextBefore = plugin.Value.GetString(item);
+                        newDataEditField.TextAfter = newDataEditField.TextBefore;
+                        newDataEditField.TextBeforeDisplay = MakeAltDataEditField(recordType, item.GetFragmentType(), item.GetDataAsString());
+                        newDataEditField.TextAfterDisplay = newDataEditField.TextBeforeDisplay;
+                        newDataEditField.ToolTip = newDataEditField.PluginPath;
+                        newDataEditFields.Add(newDataEditField);
 
                         ProgressBarStep(miniStep);
                     });
@@ -383,8 +379,6 @@ namespace SkyrimPluginTextEditor
             }
 
             BT_Apply_Update();
-            MI_FileManager_Active();
-            MI_NifManager_Active();
 
             Logger.Log.Info("Loaded " + dataEditFields.Count + " from " + selectedFiles.Count + " files");
         }
@@ -579,7 +573,13 @@ namespace SkyrimPluginTextEditor
             if (index != -1)
             {
                 if (Util.IsPluginFIle(result))
+                {
                     masterPluginList[index].MasterPluginName = result;
+                    foreach (var mast in masterPluginList[index].Master)
+                    {
+                        mast.SetMasterPluginName(result);
+                    }
+                }
                 else
                     System.Windows.MessageBox.Show("Couldn't use " + result + " as plugin name!");
             }
@@ -598,6 +598,7 @@ namespace SkyrimPluginTextEditor
                             {
                                 data.TextAfter = addText + data.TextAfter;
                                 data.TextAfterDisplay = MakeAltDataEditField(data);
+                                data.file.SetString(data.fragment, data.TextAfter);
                                 dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
                             }
                         });
@@ -611,6 +612,7 @@ namespace SkyrimPluginTextEditor
                             {
                                 data.TextAfter = data.TextAfter + addText;
                                 data.TextAfterDisplay = MakeAltDataEditField(data);
+                                data.file.SetString(data.fragment, data.TextAfter);
                                 dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
                             }
                         });
@@ -630,6 +632,7 @@ namespace SkyrimPluginTextEditor
                     string strAftertemp = data.TextAfter;
                     data.TextAfter = Util.Replace(data.TextAfter, search, result, matchCase.IsChecked);
                     data.TextAfterDisplay = MakeAltDataEditField(data);
+                    data.file.SetString(data.fragment, data.TextAfter);
 
                     if (strAftertemp != data.TextAfter)
                         dataEditFieldsEdited[data.Index] = data;
@@ -1051,16 +1054,6 @@ namespace SkyrimPluginTextEditor
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(pluginDatas, plugin =>
             {
-                foreach (var item in masterPluginList)
-                {
-                    plugin.Value.EditEditableList("TES4", "MAST", item.MasterPluginNameOrig, item.MasterPluginName);
-                }
-                var datafound = dataEditFieldsEdited.Where(x => x.Value.ToolTip == plugin.Key);
-                foreach (var item in datafound)
-                {
-                    plugin.Value.EditEditableList(item.Value.EditableIndex, item.Value.TextAfter);
-                }
-                plugin.Value.ApplyEditableDatas();
                 if (!plugin.Value.Write(FileBackup.IsChecked))
                 {
                     failFiles.Add(plugin.Key);
@@ -1088,14 +1081,12 @@ namespace SkyrimPluginTextEditor
         private List<SkyrimPluginData._Record_Fragment> GetEditableFragments(SkyrimPluginData data)
         {
             List<SkyrimPluginData._Record_Fragment> finds = new List<SkyrimPluginData._Record_Fragment>();
-            var list = Config.GetSingleton.GetEditableType();
-            foreach (var itemX in list)
+            foreach (var editRecSig in Config.GetSingleton.GetEditableType())
             {
-                foreach (var itemY in itemX.Value)
+                foreach (var editFragSig in editRecSig.Value)
                 {
-                    if (Config.GetSingleton.IsEditableBlackList(itemX.Key, itemY))
-                        continue;
-                    finds.AddRange(data.GetFragments(itemX.Key, itemY));
+                    finds.AddRange(data.GetFragments(editRecSig.Key, editFragSig).FindAll(
+                        x => !Config.GetSingleton.IsEditableBlackList(data.GetRecordTypeByFragment(x), editFragSig)));
                 }
             }
             return finds;
@@ -1107,14 +1098,8 @@ namespace SkyrimPluginTextEditor
                 return;
             App.fileManager = new FileManager();
             App.fileManager.Show(); 
-            App.fileManager.LoadFolderList(selectedFolders);
-        }
-        private void MI_FileManager_Active(bool Active = true)
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                MI_FileManager.IsEnabled = Active;
-            }));
+            if (selectedFolders.Count > 0)
+                App.fileManager.LoadFolderList(selectedFolders);
         }
 
         private void MI_Macro_Active(bool Active = true)
@@ -1422,8 +1407,6 @@ namespace SkyrimPluginTextEditor
             LV_ConvertList_Active(false);
             MI_OpenFolder_Active(false);
             MI_Reset_Active(false);
-            MI_FileManager_Active(false);
-            MI_NifManager_Active(false);
             MacroMode = true;
 
             foreach (var line in File.ReadLines(file))
@@ -1683,8 +1666,6 @@ namespace SkyrimPluginTextEditor
             LV_ConvertList_Active();
             MI_OpenFolder_Active();
             MI_Reset_Active();
-            MI_FileManager_Active();
-            MI_NifManager_Active();
 
             if (isFileEdit)
             {
@@ -1726,20 +1707,14 @@ namespace SkyrimPluginTextEditor
             Config.GetSingleton.SetSkyrimPluginEditor_FileBackup(FileBackup.IsChecked);
         }
 
-        private void MI_NifManager_Active(bool Active = true)
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
-            {
-                MI_NifManager.IsEnabled = Active;
-            }));
-        }
         private void MI_NifManager_Click(object sender, RoutedEventArgs e)
         {
             if (App.nifManager != null && App.nifManager.IsLoaded)
                 return;
             App.nifManager = new NifManager();
             App.nifManager.Show();
-            App.nifManager.LoadNifFiles(selectedFolders);
+            if (selectedFolders.Count > 0)
+                App.nifManager.LoadNifFiles(selectedFolders);
         }
 
         private void FileOrFolderDrop(object sender, DragEventArgs e)

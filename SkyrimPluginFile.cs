@@ -435,12 +435,6 @@ namespace SkyrimPluginTextEditor
         }
         public List<_Record> GetRecords(string signiture = "0000")
         {
-            if (plugin == null || signiture.Length != 4)
-                return new List<_Record>(); ;
-            return GetRecords(signiture.ToCharArray());
-        }
-        public List<_Record> GetRecords(char[] signiture)
-        {
             List<_Record> finds = new List<_Record>();
             if (plugin == null || signiture.Length != 4)
                 return finds;
@@ -450,7 +444,11 @@ namespace SkyrimPluginTextEditor
             }
             return finds;
         }
-        private List<_Record> GetRecords(char[] signiture, _GRUP group)
+        public List<_Record> GetRecords(char[] signiture)
+        {
+            return GetRecords(new string(signiture));
+        }
+        private List<_Record> GetRecords(string signiture, _GRUP group)
         {
             List<_Record> finds = new List<_Record>();
             foreach (var rg in group.Record)
@@ -462,13 +460,13 @@ namespace SkyrimPluginTextEditor
                 else
                 {
                     _Record r = rg as _Record;
-                    if (r.Signature == signiture || signiture == "0000".ToCharArray())
+                    if (new string(r.Signature) == signiture || signiture == "0000")
                         finds.Add(r);
                 }
             }
             return finds;
         }
-        public List<_Record> GetRecordsByfrag(char[] frag_sig)
+        public List<_Record> GetRecordsByfrag(string frag_sig)
         {
             List<_Record> finds = new List<_Record>();
             if (plugin == null || frag_sig.Length != 4)
@@ -476,43 +474,39 @@ namespace SkyrimPluginTextEditor
             var records = GetRecords();
             foreach (var record in records)
             {
-                if (record.Fragment.Any(x => x.Signature == frag_sig))
+                if (record.Fragment.Any(x => new string(x.Signature) == frag_sig))
                     finds.Add(record);
             }
             return finds;
         }
-        public _GRUP GetGroup(string groupInfo)
-        {
-            if (plugin == null || groupInfo.Length != 4)
-                return null;
-            return GetGroup(GetBytes(groupInfo));
-        }
         public _GRUP GetGroup(char[] groupInfo)
         {
-            if (plugin == null || groupInfo.Length != 4)
-                return null;
-            return GetGroup(GetBytes(groupInfo));
+            return GetGroup(new string(groupInfo));
         }
         public _GRUP GetGroup(byte[] groupInfo)
+        {
+            return GetGroup(GetString(groupInfo));
+        }
+        public _GRUP GetGroup(string groupInfo)
         {
             if (plugin == null || groupInfo.Length != 4)
                 return null;
             foreach (var g in plugin.Group)
             {
                 _GRUP find = GetGroup(groupInfo, g);
-                if (find != null) 
+                if (find != null)
                     return find;
             }
             return null;
         }
-        private _GRUP GetGroup(byte[] groupInfo, _GRUP group)
+        private _GRUP GetGroup(string groupInfo, _GRUP group)
         {
             foreach (var rg in group.Record)
             {
                 if (rg is _GRUP)
                 {
                     _GRUP g = rg as _GRUP;
-                    if (g.GroupInfo == groupInfo)
+                    if (GetString(g.GroupInfo) == groupInfo)
                         return g;
                     GetGroup(groupInfo, rg as _GRUP);
                 }
@@ -521,14 +515,17 @@ namespace SkyrimPluginTextEditor
         }
         public List<_Record_Fragment> GetFragments(char[] signiture)
         {
+            return GetFragments(new string(signiture));
+        }
+        public List<_Record_Fragment> GetFragments(string signiture)
+        {
             List<_Record_Fragment> finds = new List<_Record_Fragment>();
             if (plugin == null || signiture.Length != 4)
                 return finds;
-
             var records = GetRecords();
             foreach (var record in records)
             {
-                finds.AddRange(record.Fragment.FindAll(x => x.Signature == signiture));
+                finds.AddRange(record.Fragment.FindAll(x => new string(x.Signature) == signiture));
             }
             return finds;
         }
@@ -543,21 +540,48 @@ namespace SkyrimPluginTextEditor
         }
         public List<_Record_Fragment> GetFragments(string record_sig, string frag_sig)
         {
-            if (plugin == null || record_sig.Length != 4 || frag_sig.Length != 4)
-                return new List<_Record_Fragment>(); ;
-            return GetFragments(record_sig.ToCharArray(), frag_sig.ToCharArray());
-        }
-        public List<_Record_Fragment> GetFragments(char[] record_sig, char[] frag_sig)
-        {
             List<_Record_Fragment> finds = new List<_Record_Fragment>();
             if (plugin == null || record_sig.Length != 4 || frag_sig.Length != 4)
                 return finds;
             var records = GetRecords(record_sig);
             foreach (var record in records)
             {
-                finds.AddRange(record.Fragment.FindAll(x => x.Signature == frag_sig));
+                finds.AddRange(record.Fragment.FindAll(x => new string(x.Signature) == frag_sig));
             }
             return finds;
+        }
+        public List<_Record_Fragment> GetFragments(char[] record_sig, char[] frag_sig)
+        {
+            return GetFragments(new string(record_sig), new string(frag_sig));
+        }
+
+        public string GetString(_Record_Fragment frag)
+        {
+            string result = null;
+            if (IsLocalized())
+            {
+                if (localizeData != null)
+                    result = localizeData.GetStringByID(frag.Data);
+            }
+            if (result == null)
+                result = frag.GetDataAsString();
+            return result;
+        }
+
+        public bool SetString(_Record_Fragment frag, string data)
+        {
+            short result = -1;
+            if (IsLocalized())
+            {
+                if (localizeData != null)
+                    result = localizeData.SetStringByID(frag.Data, data);
+            }
+            if (result == -1)
+            {
+                frag.SetData(data);
+                result = 1;
+            }
+            return result > 0;
         }
     }
 
@@ -635,11 +659,11 @@ namespace SkyrimPluginTextEditor
             return null;
         }
 
-        public bool SetStringByID(byte[] ID, string Text)
+        public short SetStringByID(byte[] ID, string Text)
         {
             return SetStringByID(BitConverter.ToUInt32(ID), Text);
         }
-        public bool SetStringByID(UInt32 ID, string Text)
+        public short SetStringByID(UInt32 ID, string Text)
         {
             if (STRINGS != null)
             {
@@ -648,9 +672,9 @@ namespace SkyrimPluginTextEditor
                 {
                     int sindex = STRINGS.Strings.FindIndex(x => x.Pos == STRINGS.Entry[index].Pos);
                     if (sindex == -1)
-                        return false;
+                        return -2;
                     STRINGS.Strings[sindex].Data = Text;
-                    return true;
+                    return 1;
                 }
             }
             if (ILSTRINGS != null)
@@ -660,9 +684,9 @@ namespace SkyrimPluginTextEditor
                 {
                     int sindex = ILSTRINGS.Strings.FindIndex(x => x.Pos == ILSTRINGS.Entry[index].Pos);
                     if (sindex == -1)
-                        return false;
+                        return -2;
                     ILSTRINGS.Strings[sindex].Data = Text;
-                    return true;
+                    return 1;
                 }
             }
             if (DLSTRINGS != null)
@@ -672,12 +696,12 @@ namespace SkyrimPluginTextEditor
                 {
                     int sindex = DLSTRINGS.Strings.FindIndex(x => x.Pos == DLSTRINGS.Entry[index].Pos);
                     if (sindex == -1)
-                        return false;
+                        return -2;
                     DLSTRINGS.Strings[sindex].Data = Text;
-                    return true;
+                    return 1;
                 }
             }
-            return false;
+            return -1;
         }
 
         private _LocalizeDataStruct STRINGS = null;

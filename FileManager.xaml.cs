@@ -1222,7 +1222,8 @@ namespace SkyrimPluginTextEditor
                 return;
             App.nifManager = new NifManager();
             App.nifManager.Show();
-            App.nifManager.LoadNifFiles(selectedFolders);
+            if (selectedFolders.Count > 0)
+                App.nifManager.LoadNifFiles(selectedFolders);
         }
 
         private void FileOrFolderDrop(object sender, DragEventArgs e)

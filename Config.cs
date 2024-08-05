@@ -193,7 +193,7 @@ namespace SkyrimPluginTextEditor
         {
             if (GetEditableBlackList()["0000"].FindIndex(x => x == sig) != -1)
                 return true;
-            else if (GetEditableBlackList().TryGetValue(recordSig, out List<string> result) && result.FindIndex(x => x == sig) != -1)
+            else if (GetEditableBlackList().ContainsKey(recordSig) && GetEditableBlackList()[recordSig].FindIndex(x => x == sig) != -1)
                 return true;
             return false;
         }
