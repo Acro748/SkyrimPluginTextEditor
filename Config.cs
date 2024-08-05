@@ -193,7 +193,7 @@ namespace SkyrimPluginTextEditor
         {
             if (GetEditableBlackList()["0000"].FindIndex(x => x == sig) != -1)
                 return true;
-            else if (GetEditableBlackList().TryGetValue(recordSig, out List<string> result) && result.FindIndex(x => x == sig) != -1)
+            else if (GetEditableBlackList().ContainsKey(recordSig) && GetEditableBlackList()[recordSig].FindIndex(x => x == sig) != -1)
                 return true;
             return false;
         }
@@ -259,7 +259,7 @@ namespace SkyrimPluginTextEditor
             {
                 { "0000", new List<string>
                 {
-                    "MAST", "EDID", "FULL", "MODL", "MOD2", "MOD3", "MOD4", "MOD5",
+                    "EDID", "FULL", "MODL", "MOD2", "MOD3", "MOD4", "MOD5",
                 "TX00", "TX01", "TX02", "TX03", "TX04", "TX05", "TX06", "TX07",
                 "00TX", "10TX", "20TX", "30TX", "40TX", "50TX", "60TX", "70TX", "80TX", "90TX", ":0TX", ";0TX", "<0TX", "=0TX", ">0TX",
                 "?0TX", "@0TX", "A0TX", "B0TX", "C0TX", "D0TX", "E0TX", "F0TX", "G0TX", "H0TX", "I0TX", "J0TX", "K0TX", "L0TX"
