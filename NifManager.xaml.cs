@@ -101,6 +101,12 @@ namespace SkyrimPluginTextEditor
 
         private void LoadNifFiles()
         {
+            nifDatas.Clear();
+            nifDatas_Facegen.Clear();
+            nifDatas_Temp.Clear();
+            editedNifDatas.Clear();
+            blockNames.Clear();
+            stringTypes.Clear();
             Task.Run(() => LoadNifFiles_Impl());
         }
         private void LoadNifFiles_Impl()
@@ -332,11 +338,13 @@ namespace SkyrimPluginTextEditor
 
         private void InitialCategories()
         {
-            double step = ProgressBarMaximum() / stepSub / nifDatas.Count;
+            var tmpNifDatas = new List<NifData>();
+            tmpNifDatas.AddRange(nifDatas); //high possibility, create categories when sorting nif data. so backup nif datas for foreach
+            double step = ProgressBarMaximum() / stepSub / tmpNifDatas.Count;
 
             blockNames.Clear();
             stringTypes.Clear();
-            foreach (var item in nifDatas)
+            foreach (var item in tmpNifDatas)
             {
                 bool blockUpdate = false;
                 bool typeUpdate = false;
@@ -834,7 +842,7 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in stringTypes)
                                 {
-                                    if (!Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                    if (Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
                                         item.IsChecked = true;
                                 }
                             }
@@ -855,7 +863,7 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in stringTypes)
                                 {
-                                    if (!Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                    if (Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
                                         item.IsChecked = false;
                                 }
                             }
@@ -876,7 +884,7 @@ namespace SkyrimPluginTextEditor
                             {
                                 foreach (var item in stringTypes)
                                 {
-                                    if (!Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                    if (Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
                                         item.IsChecked = !item.IsChecked;
                                 }
                             }
@@ -1541,21 +1549,25 @@ namespace SkyrimPluginTextEditor
         {
             if (FacegenEdit.IsChecked)
             {
-                nifDatas_Temp.Clear();
+                if (nifDatas_Temp.Count > 0)
+                    return;
                 nifDatas_Temp.AddRange(nifDatas);
                 nifDatas_Temp.AddRange(nifDatasDisable);
                 nifDatas.Clear();
                 nifDatasDisable.Clear();
                 nifDatas.AddRange(nifDatas_Facegen);
+                nifDatas_Facegen.Clear();
             }
             else
             {
-                nifDatas_Facegen.Clear();
+                if (nifDatas_Facegen.Count > 0)
+                    return;
                 nifDatas_Facegen.AddRange(nifDatas);
                 nifDatas_Facegen.AddRange(nifDatasDisable);
                 nifDatas.Clear();
                 nifDatasDisable.Clear();
                 nifDatas.AddRange(nifDatas_Temp);
+                nifDatas_Temp.Clear();
             }
             inactiveList.Clear();
             InitialCategories();

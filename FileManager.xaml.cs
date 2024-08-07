@@ -76,6 +76,9 @@ namespace SkyrimPluginTextEditor
             MI_Reset_Active(true);
             MI_Save_Active(false);
             MI_Macro_Active(false);
+            files.Clear();
+            nonSkyrimFiles.Clear();
+            filesEdited.Clear();
             Task.Run(() => GetFiles());
             MI_Macro_Active(true);
         }
@@ -1203,7 +1206,8 @@ namespace SkyrimPluginTextEditor
 
             if (isNifEdit && !endClose)
             {
-                App.nifManager = new NifManager();
+                if (App.nifManager == null)
+                    App.nifManager = new NifManager();
                 App.nifManager.LoadNifFiles(selectedFolders);
                 App.nifManager.Macro_Load(file, !App.nifManager.IsLoaded);
             }

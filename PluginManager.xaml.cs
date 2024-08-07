@@ -36,7 +36,7 @@ namespace SkyrimPluginTextEditor
         private List<MasterPluginField> masterPluginList = new List<MasterPluginField>();
         private List<DataEditField> dataEditFields = new List<DataEditField>();
         private List<DataEditField> dataEditFieldsDisable = new List<DataEditField>();
-        private ConcurrentDictionary<UInt64, DataEditField> dataEditFieldsEdited = new ConcurrentDictionary<UInt64, DataEditField>();
+        private ConcurrentDictionary<string, SkyrimPluginFile> dataEditFieldsEdited = new ConcurrentDictionary<string, SkyrimPluginFile>();
         private Setting setting = new Setting();
         private OpenFolderDialog folderBrowser = new OpenFolderDialog() { Title = "Select plugin folders...", Multiselect = true };
         private CheckBoxBinder SafetyMode = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetSkyrimPluginEditor_SafetyMode() };
@@ -599,7 +599,7 @@ namespace SkyrimPluginTextEditor
                                 data.TextAfter = addText + data.TextAfter;
                                 data.TextAfterDisplay = MakeAltDataEditField(data);
                                 data.file.SetString(data.fragment, data.TextAfter);
-                                dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
+                                dataEditFieldsEdited.AddOrUpdate(data.PluginPath, data.file, (key, oldvalue) => data.file);
                             }
                         });
                         break;
@@ -613,7 +613,7 @@ namespace SkyrimPluginTextEditor
                                 data.TextAfter = data.TextAfter + addText;
                                 data.TextAfterDisplay = MakeAltDataEditField(data);
                                 data.file.SetString(data.fragment, data.TextAfter);
-                                dataEditFieldsEdited.AddOrUpdate(data.Index, data, (key, oldvalue) => data);
+                                dataEditFieldsEdited.AddOrUpdate(data.PluginPath, data.file, (key, oldvalue) => data.file);
                             }
                         });
                         break;
@@ -635,7 +635,7 @@ namespace SkyrimPluginTextEditor
                     data.file.SetString(data.fragment, data.TextAfter);
 
                     if (strAftertemp != data.TextAfter)
-                        dataEditFieldsEdited[data.Index] = data;
+                        dataEditFieldsEdited[data.PluginPath] = data.file;
                 }
             });
             LV_ConvertList_Update();
@@ -1052,7 +1052,7 @@ namespace SkyrimPluginTextEditor
         private void Save()
         {
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
-            Parallel.ForEach(pluginDatas, plugin =>
+            Parallel.ForEach(dataEditFieldsEdited, plugin =>
             {
                 if (!plugin.Value.Write(FileBackup.IsChecked))
                 {
@@ -1389,7 +1389,7 @@ namespace SkyrimPluginTextEditor
             if (file == "")
                 return;
 
-            
+            Macro_Load(file);
         }
         private void Macro_Load(string file)
         {
@@ -1670,8 +1670,8 @@ namespace SkyrimPluginTextEditor
             if (isFileEdit)
             {
                 App.fileManager = new FileManager();
-                App.fileManager.Macro_Load(file, !App.fileManager.IsLoaded);
                 App.fileManager.LoadFolderList(selectedFolders);
+                App.fileManager.Macro_Load(file, !App.fileManager.IsLoaded);
             }
             if (isNifEdit)
             {
