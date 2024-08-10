@@ -24,7 +24,6 @@ namespace SkyrimPluginTextEditor
     /// MainWindow.xaml에 대한 상호 작용 논리
     /// </summary>
 
-
     public partial class PluginManager : Window
     {
         private List<string> selectedFolders = new List<string>();
@@ -106,8 +105,7 @@ namespace SkyrimPluginTextEditor
                 Logger.Log.Info("Selected Folder : " + folder);
             }
 
-            selectedFiles = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.TopDirectoryOnly).FindAll(x => Util.IsPluginFIle(x));
-            SetPluginListView();
+            LoadFolderList(selectedFolders);
 
             if (selectedFolders.Count == 1)
                 Config.GetSingleton.SetDefaultPath(selectedFolders.First());
@@ -121,7 +119,7 @@ namespace SkyrimPluginTextEditor
             if (App.fileManager != null && App.fileManager.IsLoaded)
                 App.fileManager.LoadFolderList(selectedFolders);
             if (App.nifManager != null && App.nifManager.IsLoaded)
-                App.nifManager.LoadNifFiles(selectedFolders);
+                App.nifManager.LoadNifFilesFromFolders(selectedFolders);
         }
         private void MI_OpenFolder_Active(bool Active = true)
         {
@@ -152,10 +150,20 @@ namespace SkyrimPluginTextEditor
             }
             return PluginStreamBase._ErrorCode.Readed;
         }
-
-        public void SetPluginListView()
+        public void LoadFolderList(List<string> folders)
         {
-            Task.Run(() => SetPluginListView_Impl());
+            selectedFolders = folders;
+            selectedFiles = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.TopDirectoryOnly).FindAll(x => Util.IsPluginFIle(x));
+            Load();
+        }
+        public void LoadFileList(List<string> files)
+        {
+            selectedFiles = files.FindAll(x => Util.IsPluginFIle(x));
+            Load();
+        }
+        public async void Load()
+        {
+            await Task.Run(() => SetPluginListView_Impl());
         }
         public void SetPluginListView_Impl()
         {
@@ -186,7 +194,7 @@ namespace SkyrimPluginTextEditor
             pluginDatas.Clear();
             ConcurrentDictionary<string, SkyrimPluginFile> pluginDatasTemp = new ConcurrentDictionary<string, SkyrimPluginFile>();
             ConcurrentDictionary<string, PluginStreamBase._ErrorCode> wrongPlugins = new ConcurrentDictionary<string, PluginStreamBase._ErrorCode>();
-            Parallel.ForEach(selectedFiles, async path =>
+            Parallel.ForEach(selectedFiles, path =>
             {
                 if (File.Exists(path))
                 {
@@ -218,20 +226,19 @@ namespace SkyrimPluginTextEditor
 
             step = baseStep / (pluginDatas.Count == 0 ? 1 : pluginDatas.Count) * 3;
 
-            object locker = new object();
             ConcurrentDictionary<string, PluginListData> newPluginList = new ConcurrentDictionary<string, PluginListData>();
             ConcurrentDictionary<string, FragmentTypeData> newFragmentList = new ConcurrentDictionary<string, FragmentTypeData>();
             masterPluginList.Add(new MasterPluginField() { MasterPluginName = "None", MasterPluginNameOrig = "None" });
             ConcurrentDictionary<string, MasterPluginField> newMasterPluginList = new ConcurrentDictionary<string, MasterPluginField>();
             ConcurrentBag<DataEditField> newDataEditFields = new ConcurrentBag<DataEditField>(); 
             ulong dataIndex = 0;
-            Parallel.ForEach (pluginDatas, async plugin =>
+            Parallel.ForEach(pluginDatas, plugin =>
             {
                 var list = GetEditableFragments(plugin.Value);
                 double miniStep = step / (list.Count == 0 ? 1 : list.Count);
                 if (list.Count > 0)
                 {
-                    Parallel.ForEach(list, item =>
+                    foreach(var item in list)
                     {
                         string recordType = plugin.Value.GetRecordTypeByFragment(item);
                         var newPlugin = new PluginListData()
@@ -282,7 +289,7 @@ namespace SkyrimPluginTextEditor
                         newDataEditFields.Add(newDataEditField);
 
                         ProgressBarStep(miniStep);
-                    });
+                    };
                 }
                 else
                     ProgressBarStep(step);
@@ -299,8 +306,13 @@ namespace SkyrimPluginTextEditor
                     newMasterPluginList.AddOrUpdate(m.GetMasterPluginName(), newMaster, (key, oldValue) => {
                         oldValue.Master.Add(m);
                         return oldValue;
-                        });
+                    });
                 }
+
+                LV_PluginList_Update();
+                LV_FragmentList_Update();
+                LV_ConvertList_Update();
+                CB_MasterPluginBefore_Update();
             });
             pluginList.AddRange(newPluginList.Values.ToList().Except(pluginList));
             fragmentList.AddRange(newFragmentList.Values.ToList().Except(fragmentList));
@@ -397,21 +409,21 @@ namespace SkyrimPluginTextEditor
             }));
         }
         object progressLock = new object();
-        private void ProgressBarStep(double step = 1)
+        private async Task ProgressBarStep(double step = 1)
         {
             lock (progressLock)
             {
                 ProgressBarValue += step;
             }
-            ProgressBarUpdate();
+            await Task.Run(() => ProgressBarUpdate());
         }
-        private async void ProgressBarUpdate()
+        private async Task ProgressBarUpdate()
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 PB_Loading.Value = ProgressBarValue;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -421,13 +433,13 @@ namespace SkyrimPluginTextEditor
         {
             return ProgressBarMax;
         }
-        private void ProgressBarDone()
+        private async Task ProgressBarDone()
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            lock (progressLock)
             {
                 ProgressBarValue = ProgressBarMax;
-                PB_Loading.Value = ProgressBarValue;
-            }));
+            }
+            await Task.Run(() => ProgressBarUpdate());
         }
 
         private string MakeAltDataEditField(DataEditField field, bool isAfter = true)
@@ -507,11 +519,11 @@ namespace SkyrimPluginTextEditor
                 BT_Apply.IsEnabled = Active;
             }));
         }
-        private async void BT_Apply_Update()
+        private void BT_Apply_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
-                if (selectedFolders.Count == 0)
+                if (selectedFiles.Count == 0)
                 {
                     BT_Apply.IsEnabled = false;
                     return;
@@ -536,7 +548,7 @@ namespace SkyrimPluginTextEditor
                 BT_Apply.IsEnabled = false;
             }));
         }
-        private async void BT_Apply_Click(object sender, RoutedEventArgs e)
+        private void BT_Apply_Click(object sender, RoutedEventArgs e)
         {
             if (pluginDatas.Count == 0)
             {
@@ -689,35 +701,52 @@ namespace SkyrimPluginTextEditor
                 return;
             }
             var checkBox = e.OriginalSource as CheckBox;
-            if (checkBox == null)
-                return;
-
-            if (checkBox.Name == "CB_PluginListHeader")
+            var plugin = sender as PluginListData;
+            if (checkBox != null)
             {
-                var group = checkBox.DataContext as CollectionViewGroup;
-                if (group == null)
+                if (checkBox.Name == "CB_PluginListHeader")
                 {
-                    Logger.Log.Error("Couldn't get CollectionViewGroup from plugins header checkbox");
-                    return;
-                }
+                    var group = checkBox.DataContext as CollectionViewGroup;
+                    if (group == null)
+                    {
+                        Logger.Log.Error("Couldn't get CollectionViewGroup from plugins header checkbox");
+                        return;
+                    }
 
-                if (group.Items.Count == 0)
-                    return;
-                bool isChecked = checkBox.IsChecked ?? false;
+                    if (group.Items.Count == 0)
+                        return;
+                    bool isChecked = checkBox.IsChecked ?? false;
+                    List<PluginToggleData> toggleDatas = new List<PluginToggleData>();
+                    foreach (PluginListData item in group.Items)
+                    {
+                        CheckUncheckIgnoreCount += (item.IsChecked != isChecked ? 1 : 0);
+                        item.IsChecked = isChecked;
+                        PluginToggleData toggleData = new PluginToggleData()
+                        {
+                            PluginPath = item.PluginPath,
+                            RecordType = item.RecordType,
+                            FragmentType = "0000"
+                        };
+                        toggleDatas.Add(toggleData);
+                    }
+                    InactiveListUpdate(toggleDatas, isChecked);
+                    FragmentListUpdate();
+                }
+            }
+            else if (plugin != null && !this.IsLoaded)
+            {
                 List<PluginToggleData> toggleDatas = new List<PluginToggleData>();
-                foreach (PluginListData item in group.Items)
+                foreach (PluginListData item in pluginList.FindAll(x => x.PluginPath == plugin.PluginPath))
                 {
-                    CheckUncheckIgnoreCount += (item.IsChecked != isChecked ? 1 : 0);
-                    item.IsChecked = isChecked;
                     PluginToggleData toggleData = new PluginToggleData()
                     {
-                        PluginPath = item.PluginPath,
-                        RecordType = item.RecordType,
+                        PluginPath = plugin.PluginPath,
+                        RecordType = plugin.RecordType,
                         FragmentType = "0000"
                     };
                     toggleDatas.Add(toggleData);
                 }
-                InactiveListUpdate(toggleDatas, isChecked);
+                InactiveListUpdate(toggleDatas, plugin.IsChecked);
                 FragmentListUpdate();
             }
         }
@@ -729,52 +758,64 @@ namespace SkyrimPluginTextEditor
                 return;
             }
             var checkBox = e.OriginalSource as CheckBox;
-            if (checkBox == null)
-                return;
-
-            if (checkBox.Tag.ToString() == "")
+            var plugin = sender as PluginListData;
+            if (checkBox != null)
             {
-                var expander = Util.FindParent<Expander>(checkBox);
-                if (expander == null)
+                if (checkBox.Tag.ToString() == "")
                 {
-                    Logger.Log.Error("Couldn't get Expander form plugins checkbox");
-                    return;
-                }
-                var headerCheckBox = expander.FindName("CB_PluginListHeader") as CheckBox;
-                if (headerCheckBox == null)
-                {
-                    Logger.Log.Error("Couldn't get PluginsListHeader form plugins checkbox");
-                    return;
-                }
-                var group = expander.DataContext as CollectionViewGroup;
-                if (group == null)
-                {
-                    Logger.Log.Error("Couldn't get CollectionViewGroup form expender of plugins checkbox");
-                    return;
-                }
-                if (group.Items.OfType<PluginListData>().All(x => x.IsChecked))
-                {
-                    CheckUncheckIgnoreCount = 1;
-                    headerCheckBox.IsChecked = true;
-                }
-                else if (group.Items.OfType<PluginListData>().Any(x => x.IsChecked))
-                {
-                    headerCheckBox.IsChecked = null;
-                }
-                else
-                {
-                    CheckUncheckIgnoreCount = 1;
-                    headerCheckBox.IsChecked = false;
-                }
+                    var expander = Util.FindParent<Expander>(checkBox);
+                    if (expander == null)
+                    {
+                        Logger.Log.Error("Couldn't get Expander form plugins checkbox");
+                        return;
+                    }
+                    var headerCheckBox = expander.FindName("CB_PluginListHeader") as CheckBox;
+                    if (headerCheckBox == null)
+                    {
+                        Logger.Log.Error("Couldn't get PluginsListHeader form plugins checkbox");
+                        return;
+                    }
+                    var group = expander.DataContext as CollectionViewGroup;
+                    if (group == null)
+                    {
+                        Logger.Log.Error("Couldn't get CollectionViewGroup form expender of plugins checkbox");
+                        return;
+                    }
+                    if (group.Items.OfType<PluginListData>().All(x => x.IsChecked))
+                    {
+                        CheckUncheckIgnoreCount = 1;
+                        headerCheckBox.IsChecked = true;
+                    }
+                    else if (group.Items.OfType<PluginListData>().Any(x => x.IsChecked))
+                    {
+                        headerCheckBox.IsChecked = null;
+                    }
+                    else
+                    {
+                        CheckUncheckIgnoreCount = 1;
+                        headerCheckBox.IsChecked = false;
+                    }
 
-                PluginListData data = (PluginListData)checkBox.DataContext;
+                    PluginListData data = (PluginListData)checkBox.DataContext;
+                    PluginToggleData toggleData = new PluginToggleData()
+                    {
+                        PluginPath = data.PluginPath,
+                        RecordType = data.RecordType,
+                        FragmentType = "0000"
+                    };
+                    InactiveListUpdate(toggleData, data.IsChecked);
+                    FragmentListUpdate();
+                }
+            }
+            else if (plugin != null && !this.IsLoaded)
+            {
                 PluginToggleData toggleData = new PluginToggleData()
                 {
-                    PluginPath = data.PluginPath,
-                    RecordType = data.RecordType,
+                    PluginPath = plugin.PluginPath,
+                    RecordType = plugin.RecordType,
                     FragmentType = "0000"
                 };
-                InactiveListUpdate(toggleData, data.IsChecked);
+                InactiveListUpdate(toggleData, plugin.IsChecked);
                 FragmentListUpdate();
             }
         }
@@ -782,22 +823,33 @@ namespace SkyrimPluginTextEditor
         private void CB_Fragments_CheckUncheck(object sender, RoutedEventArgs e)
         {
             var checkBox = e.OriginalSource as CheckBox;
-            if (checkBox == null)
-                return;
-
-            FragmentTypeData data = checkBox.DataContext as FragmentTypeData;
-            if (data == null)
+            var fragment = sender as FragmentTypeData;
+            if (checkBox != null)
             {
-                Logger.Log.Error("Couldn't get fragment checkbox data");
-                return;
+                FragmentTypeData data = checkBox.DataContext as FragmentTypeData;
+                if (data == null)
+                {
+                    Logger.Log.Error("Couldn't get fragment checkbox data");
+                    return;
+                }
+                PluginToggleData toggleData = new PluginToggleData()
+                {
+                    PluginPath = "0000",
+                    RecordType = "0000",
+                    FragmentType = data.FragmentType
+                };
+                InactiveListUpdate(toggleData, data.IsChecked);
             }
-            PluginToggleData toggleData = new PluginToggleData()
+            else if (fragment != null && !this.IsLoaded)
             {
-                PluginPath = "0000",
-                RecordType = "0000",
-                FragmentType = data.FragmentType
-            };
-            InactiveListUpdate(toggleData, data.IsChecked);
+                PluginToggleData toggleData = new PluginToggleData()
+                {
+                    PluginPath = "0000",
+                    RecordType = "0000",
+                    FragmentType = fragment.FragmentType
+                };
+                InactiveListUpdate(toggleData, fragment.IsChecked);
+            }
         }
 
         private void FragmentListUpdate()
@@ -893,9 +945,10 @@ namespace SkyrimPluginTextEditor
             LV_ConvertList_Update();
             LV_ConvertList_Active(true);
         }
-        private void DataEditFieldSort()
+        private async Task DataEditFieldSort()
         {
-            dataEditFields.Sort((x, y) =>
+            int count = 0;
+            await Task.Run(() => dataEditFields.Sort((x, y) =>
             {
                 int result = x.PluginPath.CompareTo(y.PluginPath);
                 if (result == 0)
@@ -906,13 +959,20 @@ namespace SkyrimPluginTextEditor
                         result = x.FragmentType.CompareTo(y.FragmentType);
                     }
                 }
+                if (count < 1000)
+                    count++;
+                else
+                {
+                    count = 0;
+                    LV_ConvertList_Update();
+                }
                 return result;
-            });
+            }));
         }
 
-        private async void CB_MasterPluginBefore_Update(bool binding = false)
+        private async Task CB_MasterPluginBefore_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -934,9 +994,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private async void LV_PluginList_Update(bool binding = false)
+        private async Task LV_PluginList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -952,7 +1012,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_PluginList_Active(bool Active = true)
         {
@@ -961,9 +1021,9 @@ namespace SkyrimPluginTextEditor
                 LV_PluginList.IsEnabled = Active;
             }));
         }
-        private async void LV_FragmentList_Update(bool binding = false)
+        private async Task LV_FragmentList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -975,7 +1035,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FragmentList_Active(bool Active = true)
         {
@@ -985,9 +1045,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private async void LV_ConvertList_Update(bool binding = false)
+        private async Task LV_ConvertList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -1000,7 +1060,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ConvertList_Active(bool Active = true)
         {
@@ -1025,7 +1085,7 @@ namespace SkyrimPluginTextEditor
         {
             setting.ShowDialog();
             if (setting.IsChangedEncoding() || setting.IsChangedStringLanguage())
-                SetPluginListView();
+                Load();
         }
         private void MI_Reset_Active(bool Active = true)
         {
@@ -1036,7 +1096,7 @@ namespace SkyrimPluginTextEditor
         }
         private void MI_Reset_Click(object sender, RoutedEventArgs e)
         {
-            SetPluginListView();
+            Load();
         }
         private void MI_Save_Active(bool Active = true)
         {
@@ -1075,7 +1135,7 @@ namespace SkyrimPluginTextEditor
             }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");
-            SetPluginListView();
+            Load();
         }
 
         private List<SkyrimPluginData._Record_Fragment> GetEditableFragments(SkyrimPluginData data)
@@ -1395,9 +1455,8 @@ namespace SkyrimPluginTextEditor
         {
             if (!Util.CanRead(file))
                 return;
-            bool isTextEdit = false;
+            bool isPluginEdit = false;
             bool isFileEdit = false;
-            bool isNifEdit = false;
             bool isSave = false;
 
             LV_PluginList_Active(false);
@@ -1414,20 +1473,19 @@ namespace SkyrimPluginTextEditor
                 if (line.Length == 0)
                     continue;
 
-                if (line == "TEXTEDIT")
-                    isTextEdit = true;
+                if (line == "PLUGINEDIT")
+                    isPluginEdit = true;
                 else if (line == "FILEEDIT")
                 {
-                    isTextEdit = false;
+                    isPluginEdit = false;
                     isFileEdit = true;
                 }
                 else if (line == "NIFEDIT")
                 {
-                    isTextEdit = false;
-                    isNifEdit = true;
+                    isPluginEdit = false;
                 }
 
-                if (!isTextEdit)
+                if (!isPluginEdit)
                     continue;
 
                 var macroline = line;
@@ -1462,6 +1520,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in pluginList)
                                 {
                                     item.IsChecked = true;
+                                    CB_Plugins_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -1469,7 +1528,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in pluginList)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.PluginName, m4) || Util.IsSameStringIgnoreCase(item.RecordType, m4))
+                                    {
                                         item.IsChecked = true;
+                                        CB_Plugins_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -1483,6 +1545,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in pluginList)
                                 {
                                     item.IsChecked = false;
+                                    CB_Plugins_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -1490,7 +1553,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in pluginList)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.PluginName, m4) || Util.IsSameStringIgnoreCase(item.RecordType, m4))
+                                    {
                                         item.IsChecked = false;
+                                        CB_Plugins_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -1499,6 +1565,7 @@ namespace SkyrimPluginTextEditor
                             foreach (var item in pluginList)
                             {
                                 item.IsChecked = !item.IsChecked;
+                                CB_Plugins_CheckUncheck(item, new RoutedEventArgs());
                             }
                         }
                     }
@@ -1514,6 +1581,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in fragmentList)
                                 {
                                     item.IsChecked = true;
+                                    CB_Fragments_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -1521,7 +1589,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in fragmentList)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.FragmentType, m4))
+                                    {
                                         item.IsChecked = true;
+                                        CB_Fragments_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -1535,6 +1606,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in fragmentList)
                                 {
                                     item.IsChecked = false;
+                                    CB_Fragments_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -1542,7 +1614,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in fragmentList)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.FragmentType, m4))
+                                    {
                                         item.IsChecked = false;
+                                        CB_Fragments_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -1551,6 +1626,7 @@ namespace SkyrimPluginTextEditor
                             foreach (var item in fragmentList)
                             {
                                 item.IsChecked = !item.IsChecked;
+                                CB_Fragments_CheckUncheck(item, new RoutedEventArgs());
                             }
                         }
                     }
@@ -1670,14 +1746,8 @@ namespace SkyrimPluginTextEditor
             if (isFileEdit)
             {
                 App.fileManager = new FileManager();
-                App.fileManager.LoadFolderList(selectedFolders);
+                App.fileManager.LoadFolderList(selectedFolders, false);
                 App.fileManager.Macro_Load(file, !App.fileManager.IsLoaded);
-            }
-            if (isNifEdit)
-            {
-                App.nifManager = new NifManager();
-                App.nifManager.LoadNifFiles(selectedFolders);
-                App.nifManager.Macro_Load(file, !App.nifManager.IsLoaded);
             }
 
             MacroMode = false;
@@ -1714,7 +1784,7 @@ namespace SkyrimPluginTextEditor
             App.nifManager = new NifManager();
             App.nifManager.Show();
             if (selectedFolders.Count > 0)
-                App.nifManager.LoadNifFiles(selectedFolders);
+                App.nifManager.LoadNifFilesFromFolders(selectedFolders);
         }
 
         private void FileOrFolderDrop(object sender, DragEventArgs e)
@@ -1755,7 +1825,7 @@ namespace SkyrimPluginTextEditor
             }
 
             if (isUpdateFileList)
-                SetPluginListView();
+                Load();
         }
     }
 
@@ -1914,8 +1984,6 @@ namespace SkyrimPluginTextEditor
             }
         }
         public string MasterPluginNameOrig { get; set; }
-        public bool IsEdited { get; set; }
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -1953,7 +2021,6 @@ namespace SkyrimPluginTextEditor
                 OnPropertyChanged("ToolTip");
             }
         }
-        public bool IsEdited { get; set; }
 
         private bool _IsChecked;
         public bool IsChecked

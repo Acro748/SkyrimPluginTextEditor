@@ -57,17 +57,23 @@ namespace SkyrimPluginTextEditor
             initialDone = true;
         }
 
-        public void LoadFolderList(List<string> folders)
+        public void LoadFolderList(List<string> folders, bool multiThread = true)
         {
             selectedFolders = folders;
             selectedFiles = Util.GetAllFilesFromFolders(selectedFolders, SearchOption.AllDirectories);
-            Load();
+            if (multiThread)
+                Load();
+            else
+                LoadSingle();
         }
-        public void LoadFileList(List<string> files)
+        public void LoadFileList(List<string> files, bool multiThread = true)
         {
             selectedFolders.Clear();
             selectedFiles = files;
-            Load();
+            if (multiThread)
+                Load();
+            else
+                LoadSingle();
         }
         public void Load()
         {
@@ -79,8 +85,26 @@ namespace SkyrimPluginTextEditor
             files.Clear();
             nonSkyrimFiles.Clear();
             filesEdited.Clear();
-            Task.Run(() => GetFiles());
+            GetFilesView();
             MI_Macro_Active(true);
+        }
+        public void LoadSingle()
+        {
+            LV_FileList_Update(true);
+            LV_ExtensionList_Update(true);
+            MI_Reset_Active(true);
+            MI_Save_Active(false);
+            MI_Macro_Active(false);
+            files.Clear();
+            nonSkyrimFiles.Clear();
+            filesEdited.Clear();
+            GetFiles();
+            MI_Macro_Active(true);
+        }
+
+        public async void GetFilesView()
+        {
+            await Task.Run(() => GetFiles());
         }
 
         public bool IsInitialDone() { return initialDone; }
@@ -103,7 +127,7 @@ namespace SkyrimPluginTextEditor
             ConcurrentBag<MoveFileSet> fileTemp = new ConcurrentBag<MoveFileSet>();
             ConcurrentBag<MoveFileSet> nonSkyrimFileTemp = new ConcurrentBag<MoveFileSet>();
             ConcurrentDictionary<string, Extensions> extensionTemp = new ConcurrentDictionary<string, Extensions>();
-            Parallel.ForEach(selectedFiles, async path =>
+            Parallel.ForEach(selectedFiles, path =>
             {
                 if (!Util.CanRead(path))
                 {
@@ -220,7 +244,7 @@ namespace SkyrimPluginTextEditor
             });
         }
 
-        private async void BT_Apply_Click(object sender, RoutedEventArgs e)
+        private void BT_Apply_Click(object sender, RoutedEventArgs e)
         {
             BT_Apply_Active(false);
             if (TB_ReplaceSearch.Text.Length > 0 || TB_ReplaceResult.Text.Length > 0)
@@ -331,21 +355,21 @@ namespace SkyrimPluginTextEditor
             }));
         }
         object progressLock = new object();
-        private void ProgressBarStep(double step = 1)
+        private async Task ProgressBarStep(double step = 1)
         {
             lock (progressLock)
             {
                 ProgressBarValue += step;
             }
-            ProgressBarUpdate();
+            await Task.Run(() => ProgressBarUpdate());
         }
-        private async void ProgressBarUpdate()
+        private async Task ProgressBarUpdate()
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 PB_Loading.Value = ProgressBarValue;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -355,13 +379,13 @@ namespace SkyrimPluginTextEditor
         {
             return ProgressBarMax;
         }
-        private void ProgressBarDone()
+        private async Task ProgressBarDone()
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            lock(progressLock)
             {
                 ProgressBarValue = ProgressBarMax;
-                PB_Loading.Value = ProgressBarValue;
-            }));
+            }
+            await Task.Run(() => ProgressBarUpdate());
         }
 
         private void Checkbox_OnMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -419,14 +443,14 @@ namespace SkyrimPluginTextEditor
             GVC_Extensions.Width = GVC_Extensions.Width * Ratio;
         }
 
-        private async void BT_Apply_Active(bool Active = true)
+        private void BT_Apply_Active(bool Active = true)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 BT_Apply.IsEnabled = Active;
             }));
         }
-        private async void BT_Apply_Update()
+        private void BT_Apply_Update()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
@@ -444,9 +468,9 @@ namespace SkyrimPluginTextEditor
                 BT_Apply.IsEnabled = false;
             }));
         }
-        private async void LV_FileList_Update(bool binding = false)
+        private async Task LV_FileList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -459,7 +483,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_FileList_Active(bool Active = true)
         {
@@ -470,9 +494,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private async void LV_ExtensionList_Update(bool binding = false)
+        private async Task LV_ExtensionList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -485,7 +509,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_ExtensionList_Active(bool Active = true)
         {
@@ -509,7 +533,7 @@ namespace SkyrimPluginTextEditor
         }
         private void MI_Reset_Click(object sender, RoutedEventArgs e)
         {
-            GetFiles();
+            GetFilesView();
         }
         private void MI_Save_Active(bool Active = true)
         {
@@ -561,6 +585,8 @@ namespace SkyrimPluginTextEditor
                     {
                         System.IO.Directory.CreateDirectory(Util.GetDirectoryPath(targetFilePath));
                         System.IO.File.Move(sourceFilePath, targetFilePath);
+                        selectedFiles.Remove(sourceFilePath);
+                        selectedFiles.Add(targetFilePath);
                     }
                 }
             });
@@ -586,8 +612,8 @@ namespace SkyrimPluginTextEditor
             }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Move/Edit done!");
-            App.mainWindow.SetPluginListView();
-            GetFiles();
+            App.mainWindow.LoadFileList(selectedFiles.FindAll(x => Util.IsPluginFIle(x)));
+            GetFilesView();
         }
 
         private void MI_NonSkyrimFile_CheckUncheck(object sender, RoutedEventArgs e)
@@ -611,7 +637,7 @@ namespace SkyrimPluginTextEditor
             Config.GetSingleton.SetFileManager_NonSkyrimFile(nonSkyrimFile.IsChecked);
         }
 
-        private async void CB_FileContent_CheckUncheck(object sender, RoutedEventArgs e)
+        private void CB_FileContent_CheckUncheck(object sender, RoutedEventArgs e)
         {
             if (fileContent.IsChecked)
             {
@@ -697,27 +723,44 @@ namespace SkyrimPluginTextEditor
         private void CB_Extensions_CheckUncheck(object sender, RoutedEventArgs e)
         {
             CheckBox cb = sender as CheckBox;
-            if (cb == null)
-                return;
-            Extensions ex = cb.DataContext as Extensions;
-            if (ex == null)
+            Extensions extensions = sender as Extensions;
+            if (cb != null)
             {
-                Logger.Log.Error("Couldn't get Extensions from checkbox data");
-                return;
-            }
+                Extensions ex = cb.DataContext as Extensions;
+                if (ex == null)
+                {
+                    Logger.Log.Error("Couldn't get Extensions from checkbox data");
+                    return;
+                }
 
-            if (cb.IsChecked ?? false)
-            {
-                files.AddRange(filesDisable.FindAll(x => x.FileExtension == ex.FileExtension));
-                filesDisable.RemoveAll(x => x.FileExtension == ex.FileExtension);
+                if (cb.IsChecked ?? false)
+                {
+                    files.AddRange(filesDisable.FindAll(x => x.FileExtension == ex.FileExtension));
+                    filesDisable.RemoveAll(x => x.FileExtension == ex.FileExtension);
+                }
+                else
+                {
+                    filesDisable.AddRange(files.FindAll(x => x.FileExtension == ex.FileExtension));
+                    files.RemoveAll(x => x.FileExtension == ex.FileExtension);
+                }
+                LV_FileList_Sort();
+                LV_FileList_Update();
             }
-            else
+            else if (extensions != null && !this.IsLoaded)
             {
-                filesDisable.AddRange(files.FindAll(x => x.FileExtension == ex.FileExtension));
-                files.RemoveAll(x => x.FileExtension == ex.FileExtension);
+                if (extensions.IsChecked)
+                {
+                    files.AddRange(filesDisable.FindAll(x => x.FileExtension == extensions.FileExtension));
+                    filesDisable.RemoveAll(x => x.FileExtension == extensions.FileExtension);
+                }
+                else
+                {
+                    filesDisable.AddRange(files.FindAll(x => x.FileExtension == extensions.FileExtension));
+                    files.RemoveAll(x => x.FileExtension == extensions.FileExtension);
+                }
+                LV_FileList_Sort();
+                LV_FileList_Update();
             }
-            LV_FileList_Sort();
-            LV_FileList_Update();
         }
 
         private void LV_Check_OnClick(object sender, RoutedEventArgs e)
@@ -968,7 +1011,7 @@ namespace SkyrimPluginTextEditor
 
             foreach (var line in File.ReadLines(file))
             {
-                if (line == "TEXTEDIT")
+                if (line == "PLUGINEDIT")
                     isFileEdit = false;
                 else if (line == "NIFEDIT")
                 {
@@ -1013,6 +1056,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in extensionList)
                                 {
                                     item.IsChecked = true;
+                                    CB_Extensions_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -1020,7 +1064,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in extensionList)
                                 {
                                     if (item.FileExtension.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                    {
                                         item.IsChecked = true;
+                                        CB_Extensions_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -1034,6 +1081,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in extensionList)
                                 {
                                     item.IsChecked = false;
+                                    CB_Extensions_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -1041,29 +1089,19 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in extensionList)
                                 {
                                     if (item.FileExtension.Contains(m4, StringComparison.OrdinalIgnoreCase))
+                                    {
                                         item.IsChecked = false;
+                                        CB_Extensions_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
                         else if (m3 == "INVERT")
                         {
-                            if (macro.Length < 4)
-                                continue;
-                            var m4 = macro[3];
-                            if (m4 == "ALL")
+                            foreach (var item in extensionList)
                             {
-                                foreach (var item in extensionList)
-                                {
-                                    item.IsChecked = !item.IsChecked;
-                                }
-                            }
-                            else
-                            {
-                                foreach (var item in extensionList)
-                                {
-                                    if (item.FileExtension.Contains(m4, StringComparison.OrdinalIgnoreCase))
-                                        item.IsChecked = !item.IsChecked;
-                                }
+                                item.IsChecked = !item.IsChecked;
+                                CB_Extensions_CheckUncheck(item, new RoutedEventArgs());
                             }
                         }
                     }
@@ -1113,24 +1151,10 @@ namespace SkyrimPluginTextEditor
                         }
                         else if (m3 == "INVERT")
                         {
-                            if (macro.Length < 4)
-                                continue;
-                            var m4 = macro[3];
-                            if (m4 == "ALL")
+                            Parallel.ForEach(files, item =>
                             {
-                                Parallel.ForEach(files, item =>
-                                {
-                                    item.IsChecked = !item.IsChecked;
-                                });
-                            }
-                            else
-                            {
-                                Parallel.ForEach(files, item =>
-                                {
-                                    if (item.FileAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
-                                        item.IsChecked = !item.IsChecked;
-                                });
-                            }
+                                item.IsChecked = !item.IsChecked;
+                            }); ;
                         }
                     }
                     else if (m2 == "MATCHCASE")
@@ -1149,10 +1173,14 @@ namespace SkyrimPluginTextEditor
                         if (m3 == "CHECK")
                         {
                             fileContent.IsChecked = true;
+                            if (!this.IsLoaded)
+                                CB_FileContent_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                         else if (m3 == "UNCHECK")
                         {
                             fileContent.IsChecked = false;
+                            if (!this.IsLoaded)
+                                CB_FileContent_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                     }
                     else if (m2 == "NONSKYRIM")
@@ -1160,10 +1188,14 @@ namespace SkyrimPluginTextEditor
                         if (m3 == "CHECK")
                         {
                             fileContent.IsChecked = true;
+                            if (!this.IsLoaded)
+                                MI_NonSkyrimFile_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                         else if (m3 == "UNCHECK")
                         {
                             fileContent.IsChecked = false;
+                            if (!this.IsLoaded)
+                                MI_NonSkyrimFile_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                     }
                 }
@@ -1187,8 +1219,6 @@ namespace SkyrimPluginTextEditor
                     Save();
                     isSave = true;
                 }
-
-                Task.Delay(100);
             }
 
             if (!isSave)
@@ -1204,11 +1234,11 @@ namespace SkyrimPluginTextEditor
             MI_Save_Active();
             MI_Macro_Active();
 
-            if (isNifEdit && !endClose)
+            if (isNifEdit)
             {
                 if (App.nifManager == null)
                     App.nifManager = new NifManager();
-                App.nifManager.LoadNifFiles(selectedFolders);
+                App.nifManager.LoadNifFiles(selectedFiles, false);
                 App.nifManager.Macro_Load(file, !App.nifManager.IsLoaded);
             }
 
@@ -1227,7 +1257,7 @@ namespace SkyrimPluginTextEditor
             App.nifManager = new NifManager();
             App.nifManager.Show();
             if (selectedFolders.Count > 0)
-                App.nifManager.LoadNifFiles(selectedFolders);
+                App.nifManager.LoadNifFiles(selectedFiles);
         }
 
         private void FileOrFolderDrop(object sender, DragEventArgs e)

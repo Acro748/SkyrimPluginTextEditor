@@ -84,22 +84,22 @@ namespace SkyrimPluginTextEditor
             }
             return newMeshes;
         }
-        public void LoadNifFilesFromFolders(List<string> folders)
+        public void LoadNifFilesFromFolders(List<string> folders, bool macro = false)
         {
             selectedFolders = folders;
             meshes = GetNifFiles(selectedFolders);
-            LoadNifFiles();
+            LoadNifFiles(macro);
         }
-        public void LoadNifFiles(List<string> files)
+        public void LoadNifFiles(List<string> files, bool multiThread = true)
         {
             selectedFolders.Clear();
             meshes = GetNifFiles(files);
-            LoadNifFiles();
+            LoadNifFiles(multiThread);
         }
 
         public bool IsInitialDone() { return initialDone; }
 
-        private void LoadNifFiles()
+        private void LoadNifFiles(bool multiThread = true)
         {
             nifDatas.Clear();
             nifDatas_Facegen.Clear();
@@ -107,8 +107,20 @@ namespace SkyrimPluginTextEditor
             editedNifDatas.Clear();
             blockNames.Clear();
             stringTypes.Clear();
-            Task.Run(() => LoadNifFiles_Impl());
+            if (multiThread)
+                Load();
+            else
+                LoadSingle();
         }
+        private async void Load()
+        {
+            await Task.Run(() => LoadNifFiles_Impl());
+        }
+        private void LoadSingle()
+        {
+            LoadNifFiles_Impl();
+        }
+
         private void LoadNifFiles_Impl()
         {
             nifDatas.Clear();
@@ -127,7 +139,7 @@ namespace SkyrimPluginTextEditor
             double step = mainStep / meshes.Count;
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             ConcurrentBag<NifData> newNifDatas = new ConcurrentBag<NifData>();
-            Parallel.ForEach(meshes, async mesh =>
+            Parallel.ForEach(meshes, mesh =>
             {
                 Logger.Log.Info("reading " + mesh + " file...");
                 if (!LoadNifFile(newNifDatas, mesh))
@@ -138,7 +150,7 @@ namespace SkyrimPluginTextEditor
                 ProgressBarStep(step);
             });
             ConcurrentBag<NifData> newNifDatas_Facegen = new ConcurrentBag<NifData>();
-            Parallel.ForEach(newNifDatas, async data =>
+            Parallel.ForEach(newNifDatas, data =>
             {
                 if (data.isFacegenMesh)
                     newNifDatas_Facegen.Add(data);
@@ -317,6 +329,7 @@ namespace SkyrimPluginTextEditor
 
         private void SortingNifData()
         {
+            int count = 0;
             nifDatas.Sort((x, y) =>
             {
                 var result = x.path.CompareTo(y.path);
@@ -332,19 +345,24 @@ namespace SkyrimPluginTextEditor
                         }
                     }
                 }
+                if (count < 1000)
+                    count++;
+                else
+                {
+                    count = 0;
+                    LV_NifDataList_Update();
+                }
                 return result;
             });
         }
 
         private void InitialCategories()
         {
-            var tmpNifDatas = new List<NifData>();
-            tmpNifDatas.AddRange(nifDatas); //high possibility, create categories when sorting nif data. so backup nif datas for foreach
-            double step = ProgressBarMaximum() / stepSub / tmpNifDatas.Count;
+            double step = ProgressBarMaximum() / stepSub / nifDatas.Count;
 
             blockNames.Clear();
             stringTypes.Clear();
-            foreach (var item in tmpNifDatas)
+            foreach (var item in nifDatas)
             {
                 bool blockUpdate = false;
                 bool typeUpdate = false;
@@ -423,21 +441,21 @@ namespace SkyrimPluginTextEditor
             }));
         }
         object progressLock = new object();
-        private void ProgressBarStep(double step = 1)
+        private async void ProgressBarStep(double step = 1)
         {
             lock (progressLock)
             {
                 ProgressBarValue += step;
             }
-            ProgressBarUpdate();
+            await Task.Run(() => ProgressBarUpdate());
         }
-        private async void ProgressBarUpdate()
+        private async Task ProgressBarUpdate()
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 PB_Loading.Value = ProgressBarValue;
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private double ProgressBarLeft()
         {
@@ -447,13 +465,13 @@ namespace SkyrimPluginTextEditor
         {
             return ProgressBarMax;
         }
-        private void ProgressBarDone()
+        private async Task ProgressBarDone()
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
-                ProgressBarValue = ProgressBarMax;
                 PB_Loading.Value = ProgressBarValue;
             }));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void MI_Reset_Active(bool Active = true)
         {
@@ -560,7 +578,7 @@ namespace SkyrimPluginTextEditor
                 BT_Apply.IsEnabled = false;
             }));
         }
-        private async void BT_Apply_Click(object sender, RoutedEventArgs e)
+        private void BT_Apply_Click(object sender, RoutedEventArgs e)
         {
             if (nifDatas.Count == 0)
             {
@@ -663,7 +681,7 @@ namespace SkyrimPluginTextEditor
             LV_NifDataList_Active();
         }
 
-        private async void ApplyActiveDelay()
+        private async Task ApplyActiveDelay()
         {
             await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
@@ -730,7 +748,7 @@ namespace SkyrimPluginTextEditor
 
             foreach (var line in System.IO.File.ReadLines(file))
             {
-                if (line == "TEXTEDIT" || line == "FILEEDIT")
+                if (line == "PLUGINEDIT" || line == "FILEEDIT")
                     isFileEdit = false;
                 else if (line == "NIFEDIT")
                     isFileEdit = true;
@@ -770,6 +788,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in blockNames)
                                 {
                                     item.IsChecked = true;
+                                    CB_BlockNames_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -777,7 +796,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in blockNames)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.blockName, m4))
+                                    {
                                         item.IsChecked = true;
+                                        CB_BlockNames_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -791,6 +813,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in blockNames)
                                 {
                                     item.IsChecked = false;
+                                    CB_BlockNames_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -798,29 +821,19 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in blockNames)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.blockName, m4))
+                                    {
                                         item.IsChecked = false;
+                                        CB_BlockNames_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
                         else if (m3 == "INVERT")
                         {
-                            if (macro.Length < 4)
-                                continue;
-                            var m4 = macro[3];
-                            if (m4 == "ALL")
+                            foreach (var item in blockNames)
                             {
-                                foreach (var item in blockNames)
-                                {
-                                    item.IsChecked = !item.IsChecked;
-                                }
-                            }
-                            else
-                            {
-                                foreach (var item in blockNames)
-                                {
-                                    if (Util.IsSameStringIgnoreCase(item.blockName, m4))
-                                        item.IsChecked = !item.IsChecked;
-                                }
+                                item.IsChecked = !item.IsChecked;
+                                CB_BlockNames_CheckUncheck(item, new RoutedEventArgs());
                             }
                         }
                     }
@@ -836,6 +849,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in stringTypes)
                                 {
                                     item.IsChecked = true;
+                                    CB_StringTypes_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -843,7 +857,10 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in stringTypes)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                    {
                                         item.IsChecked = true;
+                                        CB_StringTypes_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
@@ -857,6 +874,7 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in stringTypes)
                                 {
                                     item.IsChecked = false;
+                                    CB_StringTypes_CheckUncheck(item, new RoutedEventArgs());
                                 }
                             }
                             else
@@ -864,29 +882,19 @@ namespace SkyrimPluginTextEditor
                                 foreach (var item in stringTypes)
                                 {
                                     if (Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
+                                    {
                                         item.IsChecked = false;
+                                        CB_StringTypes_CheckUncheck(item, new RoutedEventArgs());
+                                    }
                                 }
                             }
                         }
                         else if (m3 == "INVERT")
                         {
-                            if (macro.Length < 4)
-                                continue;
-                            var m4 = macro[3];
-                            if (m4 == "ALL")
+                            foreach (var item in stringTypes)
                             {
-                                foreach (var item in stringTypes)
-                                {
-                                    item.IsChecked = !item.IsChecked;
-                                }
-                            }
-                            else
-                            {
-                                foreach (var item in stringTypes)
-                                {
-                                    if (Util.IsSameStringIgnoreCase(item.stringType.ToString(), m4))
-                                        item.IsChecked = !item.IsChecked;
-                                }
+                                item.IsChecked = !item.IsChecked;
+                                CB_StringTypes_CheckUncheck(item, new RoutedEventArgs());
                             }
                         }
                     }
@@ -936,24 +944,10 @@ namespace SkyrimPluginTextEditor
                         }
                         else if (m3 == "INVERT")
                         {
-                            if (macro.Length < 4)
-                                continue;
-                            var m4 = macro[3];
-                            if (m4 == "ALL")
+                            Parallel.ForEach(nifDatas, item =>
                             {
-                                Parallel.ForEach(nifDatas, item =>
-                                {
-                                    item.IsChecked = !item.IsChecked;
-                                });
-                            }
-                            else
-                            {
-                                Parallel.ForEach(nifDatas, item =>
-                                {
-                                    if (item.strAfter.Contains(m4, StringComparison.OrdinalIgnoreCase))
-                                        item.IsChecked = !item.IsChecked;
-                                });
-                            }
+                                item.IsChecked = !item.IsChecked;
+                            });
                         }
                     }
                     else if (m2 == "MATCHCASE")
@@ -972,12 +966,14 @@ namespace SkyrimPluginTextEditor
                         if (m3 == "CHECK")
                         {
                             FacegenEdit.IsChecked = true;
-                            MI_FacegenEdit_CheckUncheck(new object(), new RoutedEventArgs());
+                            if (!this.IsLoaded)
+                                MI_FacegenEdit_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                         else if (m3 == "UNCHECK")
                         {
                             FacegenEdit.IsChecked = false;
-                            MI_FacegenEdit_CheckUncheck(new object(), new RoutedEventArgs());
+                            if (!this.IsLoaded)
+                                MI_FacegenEdit_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                     }
                 }
@@ -1034,9 +1030,9 @@ namespace SkyrimPluginTextEditor
                 System.Windows.MessageBox.Show("Macro loaded");
         }
 
-        private async void LV_BlockNameList_Update(bool binding = false)
+        private async Task LV_BlockNameList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -1048,7 +1044,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_BlockNameList_Active(bool Active = true)
         {
@@ -1057,9 +1053,9 @@ namespace SkyrimPluginTextEditor
                 LV_BlockNameList.IsEnabled = Active;
             }));
         }
-        private async void LV_StringTypeList_Update(bool binding = false)
+        private async Task LV_StringTypeList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -1071,7 +1067,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_StringTypeList_Active(bool Active = true)
         {
@@ -1081,9 +1077,9 @@ namespace SkyrimPluginTextEditor
             }));
         }
 
-        private async void LV_NifDataList_Update(bool binding = false)
+        private async Task LV_NifDataList_Update(bool binding = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
+            await Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate
             {
                 if (binding)
                 {
@@ -1096,7 +1092,7 @@ namespace SkyrimPluginTextEditor
                     view.Refresh();
                 }
             }));
-            Task.Delay(TimeSpan.FromTicks(1));
+            await Task.Delay(TimeSpan.FromTicks(1));
         }
         private void LV_NifDataList_Active(bool Active = true)
         {
@@ -1378,43 +1374,65 @@ namespace SkyrimPluginTextEditor
         private void CB_BlockNames_CheckUncheck(object sender, RoutedEventArgs e)
         {
             CheckBox cb = sender as CheckBox;
-            if (cb == null)
-                return; 
-            
-            BlockName data = cb.DataContext as BlockName;
-            if (data == null)
+            BlockName blockName = sender as BlockName;
+            if (cb != null)
             {
-                Logger.Log.Error("Couldn't get block name checkbox data");
-                return;
+                BlockName data = cb.DataContext as BlockName;
+                if (data == null)
+                {
+                    Logger.Log.Error("Couldn't get block name checkbox data");
+                    return;
+                }
+                NifDataToggleData toggleData = new NifDataToggleData()
+                {
+                    blockName = data.blockName,
+                    stringType = _StringType.None
+                };
+                InactiveListUpdate(toggleData, data.IsChecked);
+                StringTypeUpdate();
             }
-            NifDataToggleData toggleData = new NifDataToggleData()
+            else if (blockName != null && !this.IsLoaded)
             {
-                blockName = data.blockName,
-                stringType = _StringType.None
-            };
-            InactiveListUpdate(toggleData, data.IsChecked);
-            StringTypeUpdate();
+                NifDataToggleData toggleData = new NifDataToggleData()
+                {
+                    blockName = blockName.blockName,
+                    stringType = _StringType.None
+                };
+                InactiveListUpdate(toggleData, blockName.IsChecked);
+                StringTypeUpdate();
+            }
         }
-        
+
         private void CB_StringTypes_CheckUncheck(object sender, RoutedEventArgs e)
         {
             CheckBox cb = sender as CheckBox;
-            if (cb == null)
-                return;
-
-            StringType data = cb.DataContext as StringType;
-            if (data == null)
+            StringType stringType = sender as StringType;
+            if (cb != null)
             {
-                Logger.Log.Error("Couldn't get block name checkbox data");
-                return;
+                StringType data = cb.DataContext as StringType;
+                if (data == null)
+                {
+                    Logger.Log.Error("Couldn't get block name checkbox data");
+                    return;
+                }
+                NifDataToggleData toggleData = new NifDataToggleData()
+                {
+                    blockName = "0000",
+                    stringType = data.stringType
+                };
+                InactiveListUpdate(toggleData, data.IsChecked);
+                BlockNameUpdate();
             }
-            NifDataToggleData toggleData = new NifDataToggleData()
+            else if (stringType != null && !this.IsLoaded)
             {
-                blockName = "0000",
-                stringType = data.stringType
-            };
-            InactiveListUpdate(toggleData, data.IsChecked);
-            BlockNameUpdate();
+                NifDataToggleData toggleData = new NifDataToggleData()
+                {
+                    blockName = "0000",
+                    stringType = stringType.stringType
+                };
+                InactiveListUpdate(toggleData, stringType.IsChecked);
+                BlockNameUpdate();
+            }
         }
 
         private void InactiveListUpdate(NifDataToggleData data, bool IsChecked)

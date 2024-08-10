@@ -614,6 +614,8 @@ namespace SkyrimPluginTextEditor
 
         public string GetStringByID(byte[] ID)
         {
+            if (ID.Length != 4)
+                return null;
             return GetStringByID(BitConverter.ToUInt32(ID));
         }
         public string GetStringByID(UInt32 ID) 
