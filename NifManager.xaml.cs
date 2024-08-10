@@ -358,11 +358,13 @@ namespace SkyrimPluginTextEditor
 
         private void InitialCategories()
         {
-            double step = ProgressBarMaximum() / stepSub / nifDatas.Count;
+            var tmpNifDatas = new List<NifData>();
+            tmpNifDatas.AddRange(nifDatas);
+            double step = ProgressBarMaximum() / stepSub / tmpNifDatas.Count;
 
             blockNames.Clear();
             stringTypes.Clear();
-            foreach (var item in nifDatas)
+            foreach (var item in tmpNifDatas)
             {
                 bool blockUpdate = false;
                 bool typeUpdate = false;
@@ -425,6 +427,7 @@ namespace SkyrimPluginTextEditor
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             Config.GetSingleton.SetNifManager_Size(this.Height, this.Width);
+            App.nifManager = null;
         }
 
         double ProgressBarMax = 100000000;
@@ -527,7 +530,7 @@ namespace SkyrimPluginTextEditor
             }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");
-            LoadNifFiles();
+            LoadNifFiles(!MacroMode);
         }
         private void NifBackup(string path)
         {
@@ -1024,7 +1027,7 @@ namespace SkyrimPluginTextEditor
             MI_Macro_Active();
 
             MacroMode = false;
-            if (endClose && isSave)
+            if (endClose && isSave && this.IsLoaded)
                 this.Close();
             else if (!endClose)
                 System.Windows.MessageBox.Show("Macro loaded");
