@@ -309,11 +309,13 @@ namespace SkyrimPluginTextEditor
                     var newMaster = new MasterPluginField()
                     {
                         Master = new List<SkyrimPluginData._MAST> { m },
+                        Owner = new List<SkyrimPluginFile> { plugin.Value },
                         MasterPluginName = m.GetMasterPluginName(),
                         MasterPluginNameOrig = m.GetMasterPluginName(),
                     };
                     newMasterPluginList.AddOrUpdate(m.GetMasterPluginName(), newMaster, (key, oldValue) => {
                         oldValue.Master.Add(m);
+                        oldValue.Owner.Add(plugin.Value);
                         return oldValue;
                     });
                 }
@@ -599,6 +601,10 @@ namespace SkyrimPluginTextEditor
                     foreach (var mast in masterPluginList[index].Master)
                     {
                         mast.SetMasterPluginName(result);
+                    }
+                    foreach (var owner in masterPluginList[index].Owner)
+                    {
+                        dataEditFieldsEdited.AddOrUpdate(owner.GetFilePath(), owner, (key, oldvalue) => owner);
                     }
                 }
                 else
@@ -1995,7 +2001,8 @@ namespace SkyrimPluginTextEditor
     }
     public class MasterPluginField : INotifyPropertyChanged
     {
-        public List<SkyrimPluginFile._MAST> Master;
+        public List<SkyrimPluginData._MAST> Master;
+        public List<SkyrimPluginFile> Owner;
         private string _MasterPluginName;
         public string MasterPluginName 
         { 
