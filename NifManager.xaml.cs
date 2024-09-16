@@ -1,4 +1,5 @@
-﻿using nifly;
+﻿using NiflySharp;
+using NiflySharp.Blocks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +12,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using static SkyrimPluginTextEditor.PluginManager;
 
@@ -183,28 +183,34 @@ namespace SkyrimPluginTextEditor
             MI_Macro_Active();
         }
 
-        NifLoadOptions loadOptions = new NifLoadOptions() { isTerrain = false };
+        NifFileLoadOptions loadOptions = new NifFileLoadOptions() { IsTerrainFile = false };
         private bool LoadNifFile(ConcurrentBag<NifData> newNifDatas, string path)
         {
             if (!Util.CanRead(path))
                 return false;
-
-            NifFile nifFile = new NifFile(true);
+            NifFile nifFile = new NifFile();
             if (nifFile.Load(path, loadOptions) != 0)
                 return false;
-
-            Parallel.ForEach(nifFile.GetNodes(), node =>
+            Parallel.ForEach(nifFile.Blocks.OfType<NiObjectNET>(), node =>
             {
                 GetNodeData(newNifDatas, nifFile, path, node);
             });
-            Parallel.ForEach(nifFile.GetShapes(), node =>
+            //Parallel.ForEach(nifFile.Blocks.OfType<INiShape>(), shape =>
+            //{
+            //    GetShapeData(newNifDatas, nifFile, path, shape);
+            //});
+            Parallel.ForEach(nifFile.Blocks.OfType<BSShaderTextureSet>(), textureSet =>
             {
-                GetShapeData(newNifDatas, nifFile, path, node);
+                GetTextureData(newNifDatas, nifFile, path, textureSet);
+            });
+            Parallel.ForEach(nifFile.Blocks.OfType<NiExtraData>(), extraData =>
+            {
+                GetNiStringExtraData(newNifDatas, nifFile, path, extraData);
             });
             return true;
         }
 
-        private void GetNodeData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, NiAVObject obj)
+        private void GetNodeData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, NiObjectNET obj)
         {
             if (nifFile == null || obj == null)
                 return;
@@ -213,63 +219,49 @@ namespace SkyrimPluginTextEditor
             nifData.nifFile = nifFile;
             nifData.path = path;
             nifData.obj = obj;
-            nifData.blockName = obj.GetBlockName();
+            nifData.blockName = obj.GetType().Name;
             nifData.stringType = _StringType.Name;
-            nifData.strBefore = obj.name.get();
+            nifData.strBefore = obj.Name.String;
             nifData.strAfter = nifData.strBefore;
             nifData.strBeforeDisplay = MakeDisplayName(nifData);
             nifData.strAfterDisplay = nifData.strBeforeDisplay;
             nifData.ToolTip = nifData.path;
             nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
             newNifDatas.Add(nifData);
-
-            GetNiStringExtraData(newNifDatas, nifFile, path, obj);
         }
-        private void GetShapeData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, NiAVObject obj)
+        private void GetShapeData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, INiShape shape)
         {
-            if (nifFile == null || obj == null)
+            if (nifFile == null || shape == null)
                 return;
 
             NifData nifData = new NifData() { IsChecked = true, IsSelected = false };
             nifData.nifFile = nifFile;
             nifData.path = path;
-            nifData.obj = obj;
-            nifData.blockName = obj.GetBlockName();
+            nifData.obj = shape;
+            nifData.blockName = shape.GetType().Name;
             nifData.stringType = _StringType.Name;
-            nifData.strBefore = obj.name.get();
+            nifData.strBefore = shape.Name.String;
             nifData.strAfter = nifData.strBefore;
             nifData.strBeforeDisplay = MakeDisplayName(nifData);
             nifData.strAfterDisplay = nifData.strBeforeDisplay;
             nifData.ToolTip = nifData.path;
             nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
             newNifDatas.Add(nifData);
-
-            GetNiStringExtraData(newNifDatas, nifFile, path, obj);
-            GetTextureData(newNifDatas, nifFile, path, obj);
         }
-        private void GetTextureData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, NiAVObject obj)
+        private void GetTextureData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, BSShaderTextureSet textureSet)
         {
-            if (nifFile == null || obj == null)
+            if (nifFile == null || textureSet == null)
                 return;
 
-            string blockName = obj.GetBlockName();
-            if (blockName != "BSDynamicTriShape" && blockName != "BSTriShape")
-                return;
-
-            NiShape shape = obj as NiShape;
-            if (shape == null)
-                return;
-
-            for (uint texindex = 0; texindex < 9; texindex++)
+            for (int texindex = 0; texindex < 9; texindex++)
             {
-                string texture = nifFile.GetTexturePathByIndex(shape, texindex);
-                //nifFile.GetTextureSlot(shape, texture, texindex);
+                string texture = textureSet.Textures[texindex].Content;
 
                 NifData nifData = new NifData() { IsChecked = true, IsSelected = false };
                 nifData.nifFile = nifFile;
                 nifData.path = path;
-                nifData.obj = obj;
-                nifData.blockName = "BSShaderTextureSet";
+                nifData.obj = textureSet;
+                nifData.blockName = textureSet.GetType().Name;
                 nifData.stringType = (_StringType)texindex + (int)_StringType.Texture + 1;
                 nifData.textureIndex = (int)texindex;
                 nifData.strBefore = texture;
@@ -281,49 +273,63 @@ namespace SkyrimPluginTextEditor
                 newNifDatas.Add(nifData);
             }
         }
-        private void GetNiStringExtraData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, NiAVObject obj)
+        private void GetNiStringExtraData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, NiExtraData extraData)
         {
-            if (nifFile == null || obj == null)
+            if (nifFile == null || extraData == null)
                 return;
 
-            foreach (var extra in obj.extraDataRefs.GetRefs())
+            NifData nifData = new NifData() { IsChecked = true, IsSelected = false };
+            nifData.nifFile = nifFile;
+            nifData.path = path;
+            nifData.obj = extraData;
+            nifData.blockName = extraData.GetType().Name;
+            nifData.stringType = _StringType.ExtraDataName;
+            nifData.strBefore = extraData.Name.String;
+            nifData.strAfter = nifData.strBefore;
+            nifData.strBeforeDisplay = MakeDisplayName(nifData);
+            nifData.strAfterDisplay = nifData.strBeforeDisplay;
+            nifData.ToolTip = nifData.path;
+            nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
+            newNifDatas.Add(nifData);
+
+            if (extraData is NiStringExtraData)
             {
-                NiExtraData extraData = nifFile.GetHeader().GetBlockById(extra.index) as NiExtraData;
-                if (extraData == null)
-                    continue;
-
-                NifData nifData = new NifData() { IsChecked = true, IsSelected = false };
-                nifData.nifFile = nifFile;
-                nifData.path = path;
-                nifData.obj = extraData;
-                nifData.blockName = extraData.GetBlockName();
-                nifData.stringType = _StringType.ExtraDataName;
-                nifData.strBefore = extraData.name.get();
-                nifData.strAfter = nifData.strBefore;
-                nifData.strBeforeDisplay = MakeDisplayName(nifData);
-                nifData.strAfterDisplay = nifData.strBeforeDisplay;
-                nifData.ToolTip = nifData.path;
-                nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
-                newNifDatas.Add(nifData);
-
-                NiStringExtraData stringExtraData = extraData as NiStringExtraData;
-                if (stringExtraData == null)
-                    continue;
+                NiStringExtraData niStringExtraData = extraData as NiStringExtraData;
 
                 NifData nifDataAlt = new NifData() { IsChecked = true, IsSelected = false };
                 nifDataAlt.nifFile = nifFile;
                 nifDataAlt.path = path;
-                nifDataAlt.obj = stringExtraData;
-                nifDataAlt.blockName = stringExtraData.GetBlockName();
+                nifDataAlt.obj = niStringExtraData;
+                nifDataAlt.blockName = niStringExtraData.GetType().Name;
                 nifDataAlt.stringType = _StringType.ExtraData;
-                nifDataAlt.strBefore = stringExtraData.stringData.get();
+                nifDataAlt.strBefore = niStringExtraData.StringData.String;
                 nifDataAlt.strAfter = nifDataAlt.strBefore;
                 nifDataAlt.strBeforeDisplay = MakeDisplayName(nifDataAlt);
                 nifDataAlt.strAfterDisplay = nifDataAlt.strBeforeDisplay;
                 nifDataAlt.ToolTip = nifDataAlt.path;
                 nifDataAlt.isFacegenMesh = Util.IsFacegenMesh(nifDataAlt.path);
                 newNifDatas.Add(nifDataAlt);
-                //NiStringsExtraData stringsExtraData = extraData as NiStringsExtraData;
+            }
+            else if (extraData is NiStringsExtraData)
+            {
+                NiStringsExtraData niStringsExtraData = extraData as NiStringsExtraData;
+                for (int stringIndex = 0; stringIndex < niStringsExtraData.NumStrings; stringIndex++)
+                {
+                    NifData nifDataAlt = new NifData() { IsChecked = true, IsSelected = false };
+                    nifDataAlt.nifFile = nifFile;
+                    nifDataAlt.path = path;
+                    nifDataAlt.obj = niStringsExtraData;
+                    nifDataAlt.blockName = niStringsExtraData.GetType().Name;
+                    nifDataAlt.stringType = _StringType.ExtraData;
+                    nifDataAlt.strBefore = niStringsExtraData.Data[stringIndex].Content;
+                    nifDataAlt.strAfter = nifDataAlt.strBefore;
+                    nifDataAlt.strBeforeDisplay = MakeDisplayName(nifDataAlt);
+                    nifDataAlt.strAfterDisplay = nifDataAlt.strBeforeDisplay;
+                    nifDataAlt.extraStringIndex = stringIndex;
+                    nifDataAlt.ToolTip = nifDataAlt.path;
+                    nifDataAlt.isFacegenMesh = Util.IsFacegenMesh(nifDataAlt.path);
+                    newNifDatas.Add(nifDataAlt);
+                }
             }
         }
 
@@ -699,24 +705,26 @@ namespace SkyrimPluginTextEditor
 
         private void ApplyNifFile(NifData data)
         {
-            if (data.textureIndex > -1) //no texture
+            if (data.textureIndex > -1) //is contain texture
             {
-                data.nifFile.SetTextureSlot(data.obj as NiShape, data.strAfter, (uint)data.textureIndex);
+                (data.obj as BSShaderTextureSet).Textures[data.textureIndex].Content = data.strAfter;
             }
             else if (data.stringType == _StringType.Name)
             {
-                (data.obj as NiAVObject).name = new NiStringRef(data.strAfter);
+                (data.obj as NiObjectNET).Name = new NiStringRef(data.strAfter);
             }
             else if (data.stringType == _StringType.ExtraDataName)
             {
-                (data.obj as NiExtraData).name = new NiStringRef(data.strAfter);
+                (data.obj as NiExtraData).Name = new NiStringRef(data.strAfter);
             }
             else if (data.stringType == _StringType.ExtraData)
             {
-                (data.obj as NiStringExtraData).stringData = new NiStringRef(data.strAfter);
+                if (data.extraStringIndex > -1)
+                    (data.obj as NiStringsExtraData).Data[data.extraStringIndex].Content = data.strAfter;
+                else
+                    (data.obj as NiStringExtraData).StringData = new NiStringRef(data.strAfter);
             }
         }
-
 
         private void CB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1737,10 +1745,11 @@ namespace SkyrimPluginTextEditor
     {
         public NifFile nifFile = null;
         public string path = "";
-        public NiObject obj = null;
+        public INiObject obj = null;
         public string blockName = "";
         public _StringType stringType = _StringType.None;
         public int textureIndex = -1;
+        public int extraStringIndex = -1;
 
         public bool isFacegenMesh = false;
 

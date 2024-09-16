@@ -63,7 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.17" />
-    <PackageReference Include="niflysharp" Version="1.3.0" />
+    <PackageReference Include="Nifly" Version="0.1.0" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
