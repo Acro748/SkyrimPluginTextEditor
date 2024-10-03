@@ -199,7 +199,7 @@ namespace SkyrimPluginTextEditor
             return openFileDialog.FileName;
         }
 
-        static public bool IsFacegenMesh(string path)
+        static public bool IsFacegenThing(string path)
         {
             return path.Contains("FaceGeom", System.StringComparison.OrdinalIgnoreCase) 
                 && path.Contains("FaceGenData", System.StringComparison.OrdinalIgnoreCase);

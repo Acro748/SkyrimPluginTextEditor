@@ -226,7 +226,7 @@ namespace SkyrimPluginTextEditor
             nifData.strBeforeDisplay = MakeDisplayName(nifData);
             nifData.strAfterDisplay = nifData.strBeforeDisplay;
             nifData.ToolTip = nifData.path;
-            nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
+            nifData.isFacegenMesh = Util.IsFacegenThing(nifData.path);
             newNifDatas.Add(nifData);
         }
         private void GetShapeData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, INiShape shape)
@@ -245,7 +245,7 @@ namespace SkyrimPluginTextEditor
             nifData.strBeforeDisplay = MakeDisplayName(nifData);
             nifData.strAfterDisplay = nifData.strBeforeDisplay;
             nifData.ToolTip = nifData.path;
-            nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
+            nifData.isFacegenMesh = Util.IsFacegenThing(nifData.path);
             newNifDatas.Add(nifData);
         }
         private void GetTextureData(ConcurrentBag<NifData> newNifDatas, NifFile nifFile, string path, BSShaderTextureSet textureSet)
@@ -269,7 +269,7 @@ namespace SkyrimPluginTextEditor
                 nifData.strBeforeDisplay = MakeDisplayName(nifData);
                 nifData.strAfterDisplay = nifData.strBeforeDisplay;
                 nifData.ToolTip = nifData.path;
-                nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
+                nifData.isFacegenMesh = Util.IsFacegenThing(nifData.path);
                 newNifDatas.Add(nifData);
             }
         }
@@ -289,7 +289,7 @@ namespace SkyrimPluginTextEditor
             nifData.strBeforeDisplay = MakeDisplayName(nifData);
             nifData.strAfterDisplay = nifData.strBeforeDisplay;
             nifData.ToolTip = nifData.path;
-            nifData.isFacegenMesh = Util.IsFacegenMesh(nifData.path);
+            nifData.isFacegenMesh = Util.IsFacegenThing(nifData.path);
             newNifDatas.Add(nifData);
 
             if (extraData is NiStringExtraData)
@@ -307,7 +307,7 @@ namespace SkyrimPluginTextEditor
                 nifDataAlt.strBeforeDisplay = MakeDisplayName(nifDataAlt);
                 nifDataAlt.strAfterDisplay = nifDataAlt.strBeforeDisplay;
                 nifDataAlt.ToolTip = nifDataAlt.path;
-                nifDataAlt.isFacegenMesh = Util.IsFacegenMesh(nifDataAlt.path);
+                nifDataAlt.isFacegenMesh = Util.IsFacegenThing(nifDataAlt.path);
                 newNifDatas.Add(nifDataAlt);
             }
             else if (extraData is NiStringsExtraData)
@@ -327,7 +327,7 @@ namespace SkyrimPluginTextEditor
                     nifDataAlt.strAfterDisplay = nifDataAlt.strBeforeDisplay;
                     nifDataAlt.extraStringIndex = stringIndex;
                     nifDataAlt.ToolTip = nifDataAlt.path;
-                    nifDataAlt.isFacegenMesh = Util.IsFacegenMesh(nifDataAlt.path);
+                    nifDataAlt.isFacegenMesh = Util.IsFacegenThing(nifDataAlt.path);
                     newNifDatas.Add(nifDataAlt);
                 }
             }
@@ -532,7 +532,7 @@ namespace SkyrimPluginTextEditor
                     failFileList += item;
                     first = false;
                 }
-                System.Windows.MessageBox.Show(failFileList, "ERROR : Unable to move the file!");
+                System.Windows.MessageBox.Show(failFileList, "ERROR : Unable to save the file!");
             }
             if (!MacroMode)
                 System.Windows.MessageBox.Show("Save done!");

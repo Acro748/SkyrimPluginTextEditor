@@ -78,6 +78,7 @@
                         <MenuItem x:Name="MI_FileOverwrite" Header="File Overwrite" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="If file exists in a new path, overwrite it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
                         <MenuItem x:Name="MI_ClearSubFolder" Header="Clear empty SubFolder" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="When saving files, if the sub folder is empty, remove it" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
                         <MenuItem x:Name="MI_NonSkyrimFile" Header="Non Skyrim File" IsCheckable="True" IsChecked="{Binding IsChecked}" Checked="MI_NonSkyrimFile_CheckUncheck" Unchecked="MI_NonSkyrimFile_CheckUncheck" ToolTip="Display non skyrim file to editable"/>
+                        <MenuItem x:Name="MI_FacegenFolderEdit" Header="Facegen Folder Edit" IsCheckable="True" IsChecked="{Binding IsChecked}" ToolTip="Display facegen folder to editable" Checked="SaveStateOnConfig" Unchecked="SaveStateOnConfig"/>
                         <Separator />
                         <MenuItem x:Name="MI_NifManager" Header="Open Nif Manager..." Click="MI_NifManager_Click"/>
                     </MenuItem>

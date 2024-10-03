@@ -38,6 +38,7 @@ namespace SkyrimPluginTextEditor
         private CheckBoxBinder fileOverwrite = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetFileManager_FileOverwrite() };
         private CheckBoxBinder clearSubFolder = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetFileManager_ClearEmptySubFolder() };
         private CheckBoxBinder nonSkyrimFileCheck = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetFileManager_NonSkyrimFile() };
+        private CheckBoxBinder facegenFolderEdit = new CheckBoxBinder() { IsChecked = Config.GetSingleton.GetFileManager_FacegenFolderEdit() };
         private bool MacroMode = false;
 
         public FileManager()
@@ -53,6 +54,7 @@ namespace SkyrimPluginTextEditor
             MI_FileOverwrite.DataContext = fileOverwrite;
             MI_ClearSubFolder.DataContext = clearSubFolder;
             MI_NonSkyrimFile.DataContext = nonSkyrimFileCheck;
+            MI_FacegenFolderEdit.DataContext = facegenFolderEdit;
 
             initialDone = true;
         }
@@ -286,8 +288,11 @@ namespace SkyrimPluginTextEditor
                     {
                         if (IsValidPathSearch == '0' && IsValidPathResult == '0')
                         {
-                            file.FileAfter = Util.Replace(file.FileAfter, search, result, matchCase.IsChecked);
-                            file.DisplayAfter = file.FileAfter;
+                            if (!Util.IsFacegenThing(file.FileBefore) || (Util.IsFacegenThing(file.FileBefore) && facegenFolderEdit.IsChecked))
+                            {
+                                file.FileAfter = Util.Replace(file.FileAfter, search, result, matchCase.IsChecked);
+                                file.DisplayAfter = file.FileAfter;
+                            }
                         }
                     }
                     else if (file.IsContainsContent)
@@ -981,6 +986,8 @@ namespace SkyrimPluginTextEditor
                     Config.GetSingleton.SetFileManager_FileOverwrite(fileOverwrite.IsChecked);
                 else if (mi == MI_ClearSubFolder)
                     Config.GetSingleton.SetFileManager_ClearEmptySubFolder(clearSubFolder.IsChecked);
+                else if (mi == MI_FacegenFolderEdit)
+                    Config.GetSingleton.SetFileManager_FacegenFolderEdit(facegenFolderEdit.IsChecked);
             }
         }
 
@@ -1190,15 +1197,26 @@ namespace SkyrimPluginTextEditor
                     {
                         if (m3 == "CHECK")
                         {
-                            fileContent.IsChecked = true;
+                            nonSkyrimFile.IsChecked = true;
                             if (!this.IsLoaded)
                                 MI_NonSkyrimFile_CheckUncheck(new object(), new RoutedEventArgs());
                         }
                         else if (m3 == "UNCHECK")
                         {
-                            fileContent.IsChecked = false;
+                            nonSkyrimFile.IsChecked = false;
                             if (!this.IsLoaded)
                                 MI_NonSkyrimFile_CheckUncheck(new object(), new RoutedEventArgs());
+                        }
+                    }
+                    else if (m2 == "FACEGENFOLDER")
+                    {
+                        if (m3 == "CHECK")
+                        {
+                            facegenFolderEdit.IsChecked = true;
+                        }
+                        else if (m3 == "UNCHECK")
+                        {
+                            facegenFolderEdit.IsChecked = false;
                         }
                     }
                 }

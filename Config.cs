@@ -125,6 +125,7 @@ namespace SkyrimPluginTextEditor
         public bool GetFileManager_FileOverwrite() { return configContainer.fileManager.FileOverwrite; }
         public bool GetFileManager_ClearEmptySubFolder() { return configContainer.fileManager.ClearEmptySubFolder; }
         public bool GetFileManager_NonSkyrimFile() { return configContainer.fileManager.NonSkyrimFile; }
+        public bool GetFileManager_FacegenFolderEdit() { return configContainer.fileManager.FacegenFolderEdit; }
         public double GetNifManager_Height() { return configContainer.nifManager.Height; }
         public double GetNifManager_Width() { return configContainer.nifManager.Width; }
         public bool GetNifManager_MatchCase() { return configContainer.nifManager.MatchCase; }
@@ -168,6 +169,7 @@ namespace SkyrimPluginTextEditor
         public void SetFileManager_FileOverwrite(bool active) { configContainer.fileManager.FileOverwrite = active; ConfigWrite(); }
         public void SetFileManager_ClearEmptySubFolder(bool active) { configContainer.fileManager.ClearEmptySubFolder = active; ConfigWrite(); }
         public void SetFileManager_NonSkyrimFile(bool active) { configContainer.fileManager.NonSkyrimFile = active; ConfigWrite(); }
+        public void SetFileManager_FacegenFolderEdit(bool active) { configContainer.fileManager.FacegenFolderEdit = active; ConfigWrite(); }
 
         public void SetNifManager_Size(double Height, double Width)
         {
@@ -240,6 +242,7 @@ namespace SkyrimPluginTextEditor
                 public bool FileOverwrite = false;
                 public bool ClearEmptySubFolder = true;
                 public bool NonSkyrimFile = false;
+                public bool FacegenFolderEdit = false;
             }
             public FileManager fileManager = new FileManager();
 
