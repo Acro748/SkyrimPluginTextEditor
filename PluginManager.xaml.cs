@@ -1131,8 +1131,19 @@ namespace SkyrimPluginTextEditor
             {
                 if (!plugin.Value.Write(FileBackup.IsChecked))
                 {
-                    failFiles.Add(plugin.Key);
-                    Logger.Log.Fatal("Unable to access the file : " + plugin.Key);
+                    UInt16 count = 0;
+                    while (count < 100)
+                    {
+                        Task.Delay(1).Wait();
+                        if (plugin.Value.Write(FileBackup.IsChecked))
+                            break;
+                        count++;
+                    }
+                    if (count == 100)
+                    {
+                        failFiles.Add(plugin.Key);
+                        Logger.Log.Fatal("Unable to access the file : " + plugin.Key);
+                    }
                 }
             });
             if (failFiles.Count > 0)

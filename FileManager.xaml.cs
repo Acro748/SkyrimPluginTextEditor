@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net.Plugin;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -566,12 +567,26 @@ namespace SkyrimPluginTextEditor
                 string sourceFilePath = file.Value.FileBasePath + file.Value.FileBefore;
                 string targetFilePath = file.Value.FileBasePath + file.Value.FileAfter;
 
+                bool UnableWrite = false;
                 if (!Util.CanRead(sourceFilePath) || !Util.CanWrite(targetFilePath))
                 {
-                    failFiles.Add(sourceFilePath);
-                    Logger.Log.Fatal("Unable to move the file : " + sourceFilePath + " => " + targetFilePath);
+                    UInt16 count = 0;
+                    while (count < 100)
+                    {
+                        Task.Delay(1).Wait();
+                        if (Util.CanRead(sourceFilePath) && Util.CanWrite(targetFilePath))
+                            break;
+                        count++;
+                    }
+                    if (count == 100)
+                    {
+                        failFiles.Add(sourceFilePath);
+                        Logger.Log.Fatal("Unable to move the file : " + sourceFilePath + " => " + targetFilePath);
+                        UnableWrite = true;
+                    }
                 }
-                else
+
+                if (!UnableWrite)
                 {
                     if (isContentEdited && file.Value.IsContainsContent)
                     {

@@ -1,4 +1,5 @@
-﻿using NiflySharp;
+﻿using log4net.Plugin;
+using NiflySharp;
 using NiflySharp.Blocks;
 using System;
 using System.Collections.Concurrent;
@@ -509,12 +510,26 @@ namespace SkyrimPluginTextEditor
             ConcurrentBag<string> failFiles = new ConcurrentBag<string>();
             Parallel.ForEach(editedNifDatas, nif =>
             {
+                bool UnableWrite = false;
                 if (!Util.CanWrite(nif.Value.path))
                 {
-                    failFiles.Add(nif.Value.path);
-                    Logger.Log.Fatal("Unable to access the file : " + nif.Value.path);
+                    UInt16 count = 0;
+                    while (count < 100)
+                    {
+                        Task.Delay(1).Wait();
+                        if (Util.CanWrite(nif.Value.path))
+                            break;
+                        count++;
+                    }
+                    if (count == 100)
+                    {
+                        failFiles.Add(nif.Value.path);
+                        Logger.Log.Fatal("Unable to access the file : " + nif.Value.path);
+                        UnableWrite = true;
+                    }
                 }
-                else
+
+                if (!UnableWrite)
                 {
                     if (fileBackup.IsChecked)
                         NifBackup(nif.Value.path);
